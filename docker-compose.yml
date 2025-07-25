@@ -1,0 +1,92 @@
+# Claude Shop Docker Compose
+# 开发环境配置
+
+version: '3.8'
+
+services:
+  # MySQL 数据库
+  mysql:
+    image: mysql:8.0
+    container_name: claude_shop_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: claude_shop_root_2024
+      MYSQL_DATABASE: claude_shop_development
+      MYSQL_USER: claude_shop
+      MYSQL_PASSWORD: claude_shop_pass_2024
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./db/init:/docker-entrypoint-initdb.d
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # Redis (缓存和队列)
+  redis:
+    image: redis:7-alpine
+    container_name: claude_shop_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Rails 应用
+  web:
+    build: .
+    container_name: claude_shop_web
+    environment:
+      - DATABASE_URL=mysql2://claude_shop:claude_shop_pass_2024@mysql:3306/claude_shop_development
+      - REDIS_URL=redis://redis:6379/0
+      - RAILS_ENV=development
+      - RAILS_LOG_TO_STDOUT=1
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - bundle_cache:/usr/local/bundle
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    stdin_open: true
+    tty: true
+    command: >
+      bash -c "
+        bundle install &&
+        bundle exec rails db:create &&
+        bundle exec rails db:migrate &&
+        bundle exec rails db:seed &&
+        bundle exec rails server -b 0.0.0.0
+      "
+
+  # Sidekiq 后台任务
+  sidekiq:
+    build: .
+    container_name: claude_shop_sidekiq
+    environment:
+      - DATABASE_URL=mysql2://claude_shop:claude_shop_pass_2024@mysql:3306/claude_shop_development
+      - REDIS_URL=redis://redis:6379/0
+      - RAILS_ENV=development
+    volumes:
+      - .:/app
+      - bundle_cache:/usr/local/bundle
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: bundle exec sidekiq
+
+volumes:
+  mysql_data:
+  redis_data:
+  bundle_cache:
