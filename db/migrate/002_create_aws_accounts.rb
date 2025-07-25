@@ -1,4 +1,4 @@
-class CreateAwsAccounts < ActiveRecord::Migration[5.2]
+class CreateAwsAccounts < ActiveRecord::Migration[8.0]
   def change
     create_table :aws_accounts do |t|
       t.string :account_id, null: false, limit: 20

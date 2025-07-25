@@ -1,4 +1,4 @@
-class CreateSystemConfigs < ActiveRecord::Migration[5.2]
+class CreateSystemConfigs < ActiveRecord::Migration[8.0]
   def change
     create_table :system_configs do |t|
       t.string :key, null: false, limit: 100

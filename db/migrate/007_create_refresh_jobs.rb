@@ -1,4 +1,4 @@
-class CreateRefreshJobs < ActiveRecord::Migration[5.2]
+class CreateRefreshJobs < ActiveRecord::Migration[8.0]
   def change
     create_table :refresh_jobs do |t|
       t.references :aws_account, null: true, foreign_key: true  # null for batch jobs

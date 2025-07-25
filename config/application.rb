@@ -38,5 +38,22 @@ module App
 
     # Don't generate system test files.
     config.generators.system_tests = nil
+    
+    # JWT Authentication Middleware
+    config.middleware.use JwtAuthenticationMiddleware
+    
+    # API-only mode for /api routes
+    config.api_only = false
+    
+    # CORS configuration
+    config.middleware.insert_before 0, Rack::Cors do
+      allow do
+        origins Rails.env.development? ? '*' : []
+        resource '/api/*',
+          headers: :any,
+          methods: [:get, :post, :put, :patch, :delete, :options, :head],
+          credentials: true
+      end
+    end
   end
 end

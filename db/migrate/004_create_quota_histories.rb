@@ -1,4 +1,4 @@
-class CreateQuotaHistories < ActiveRecord::Migration[5.2]
+class CreateQuotaHistories < ActiveRecord::Migration[8.0]
   def change
     create_table :quota_histories do |t|
       t.references :aws_account, null: false, foreign_key: true
