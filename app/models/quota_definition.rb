@@ -52,6 +52,21 @@ class QuotaDefinition < ApplicationRecord
       value.to_s
     end
   end
+
+  # Service name for compatibility
+  def service_name
+    quota_name
+  end
+
+  # Additional compatibility methods
+  def quota_level
+    return 'unknown' unless default_value
+    default_value >= 1000 ? 'high' : 'low'
+  end
+
+  def is_adjustable?
+    true # Most AWS quotas are adjustable
+  end
   
   private
   

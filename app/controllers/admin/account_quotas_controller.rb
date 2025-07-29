@@ -8,7 +8,7 @@ module Admin
     def index
       @account_quotas = filtered_account_quotas.includes(:aws_account, :quota_definition)
                                               .joins(:quota_definition)
-                                              .order('quota_definitions.service_name', :aws_account_id)
+                                              .order('quota_definitions.quota_name', :aws_account_id)
                                               .page(params[:page]).per(20)
       
       @quota_summary = build_quota_summary
@@ -32,7 +32,7 @@ module Admin
     def account_quotas
       @account_quotas = @aws_account.account_quotas.includes(:quota_definition)
                                                   .joins(:quota_definition)
-                                                  .order('quota_definitions.service_name')
+                                                  .order('quota_definitions.quota_name')
       @total_current_quota = @account_quotas.sum(:current_quota)
       @active_quotas_count = @account_quotas.where('current_quota > 0').count
       @last_sync = @account_quotas.maximum(:last_sync_at)
@@ -185,7 +185,7 @@ module Admin
         search_term = "%#{params[:search]}%"
         scope = scope.joins(:aws_account, :quota_definition)
                      .where(
-                       "aws_accounts.name LIKE ? OR quota_definitions.service_name LIKE ? OR quota_definitions.claude_model_name LIKE ?",
+                       "aws_accounts.name LIKE ? OR quota_definitions.quota_name LIKE ? OR quota_definitions.claude_model_name LIKE ?",
                        search_term, search_term, search_term
                      )
       end
@@ -260,7 +260,7 @@ module Admin
       
       CSV.generate(headers: true) do |csv|
         csv << [
-          'ID', 'AWS账号', '服务名称', 'Claude模型', '配额类型', 
+          'ID', 'AWS账号', '配额名称', 'Claude模型', '配额类型', 
           '当前配额', '配额等级', '是否可调整', '同步状态', '最后同步时间'
         ]
         
@@ -268,7 +268,7 @@ module Admin
           csv << [
             quota.id,
             quota.aws_account.name,
-            quota.quota_definition.service_name,
+            quota.quota_definition.quota_name,
             quota.quota_definition.claude_model_name,
             quota.quota_definition.quota_type,
             quota.current_quota,
