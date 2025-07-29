@@ -26,8 +26,7 @@ FactoryBot.define do
         create(:account_quota, 
                aws_account: aws_account, 
                quota_definition: quota_definition,
-               current_quota: 1000,
-               quota_limit: 1000)
+               current_quota: 1000)
       end
     end
 
@@ -37,8 +36,7 @@ FactoryBot.define do
         create(:account_quota, 
                aws_account: aws_account, 
                quota_definition: quota_definition,
-               current_quota: 10,
-               quota_limit: 10)
+               current_quota: 10)
       end
     end
 
@@ -50,14 +48,12 @@ FactoryBot.define do
         create(:account_quota, 
                aws_account: aws_account, 
                quota_definition: high_quota_def,
-               current_quota: 1000,
-               quota_limit: 1000)
+               current_quota: 1000)
         
         create(:account_quota, 
                aws_account: aws_account, 
                quota_definition: low_quota_def,
-               current_quota: 100,
-               quota_limit: 100)
+               current_quota: 100)
       end
     end
 

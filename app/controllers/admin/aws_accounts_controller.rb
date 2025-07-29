@@ -254,12 +254,12 @@ module Admin
       CSV.generate(headers: true) do |csv|
         csv << [
           'ID', '账号名称', 'AWS账号ID', '区域', '状态', 
-          '活跃配额数量', '总配额限制', '描述', '创建时间', '更新时间'
+          '活跃配额数量', '当前总配额', '描述', '创建时间', '更新时间'
         ]
         
         accounts.each do |account|
           active_quotas = account.account_quotas.where('current_quota > 0').count
-          total_quota_limit = account.account_quotas.sum(:quota_limit)
+          total_current_quota = account.account_quotas.sum(:current_quota)
           
           csv << [
             account.id,
@@ -268,7 +268,7 @@ module Admin
             account.region,
             I18n.t("aws_account.status.#{account.status}"),
             active_quotas,
-            total_quota_limit,
+            total_current_quota,
             account.description,
             account.created_at.strftime('%Y-%m-%d %H:%M'),
             account.updated_at.strftime('%Y-%m-%d %H:%M')

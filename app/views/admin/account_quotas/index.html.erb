@@ -1,0 +1,340 @@
+<% content_for :page_title, '配额管理' %>
+<% content_for :page_actions do %>
+  <%= link_to '刷新所有配额', bulk_refresh_admin_account_quotas_path, 
+      method: :post,
+      data: { confirm: "确定要刷新所有配额吗？这可能需要一些时间。" },
+      class: 'inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500' %>
+  
+  <%= link_to '统计信息', statistics_admin_account_quotas_path, 
+      class: 'inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500' %>
+  
+  <div class="relative" data-controller="dropdown">
+    <button type="button" 
+            data-action="click->dropdown#toggle"
+            class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+      导出数据
+      <svg class="ml-2 -mr-1 h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+      </svg>
+    </button>
+    
+    <div data-dropdown-target="menu" 
+         class="hidden origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
+      <div class="py-1">
+        <%= link_to export_admin_account_quotas_path(format: :csv), 
+            class: 'block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100' do %>
+          <i class="fas fa-file-csv mr-2"></i>导出CSV
+        <% end %>
+        <%= link_to export_admin_account_quotas_path(format: :json), 
+            class: 'block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100' do %>
+          <i class="fas fa-file-code mr-2"></i>导出JSON
+        <% end %>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<!-- 统计卡片 -->
+<div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-6">
+  <div class="bg-white overflow-hidden shadow rounded-lg">
+    <div class="p-5">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <svg class="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2-2V7a2 2 0 012-2h2a2 2 0 002 2v2a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 00-2 2h-2a2 2 0 00-2 2v6a2 2 0 01-2 2H9z" />
+          </svg>
+        </div>
+        <div class="ml-5 w-0 flex-1">
+          <dl>
+            <dt class="text-sm font-medium text-gray-500 truncate">总配额数</dt>
+            <dd class="text-lg font-medium text-gray-900"><%= @quota_summary[:total] %></dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white overflow-hidden shadow rounded-lg">
+    <div class="p-5">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <svg class="h-6 w-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div class="ml-5 w-0 flex-1">
+          <dl>
+            <dt class="text-sm font-medium text-gray-500 truncate">活跃配额</dt>
+            <dd class="text-lg font-medium text-gray-900"><%= @quota_summary[:active] %></dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white overflow-hidden shadow rounded-lg">
+    <div class="p-5">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <svg class="h-6 w-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+          </svg>
+        </div>
+        <div class="ml-5 w-0 flex-1">
+          <dl>
+            <dt class="text-sm font-medium text-gray-500 truncate">高配额</dt>
+            <dd class="text-lg font-medium text-gray-900"><%= @quota_summary[:high_level] %></dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white overflow-hidden shadow rounded-lg">
+    <div class="p-5">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <svg class="h-6 w-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+          </svg>
+        </div>
+        <div class="ml-5 w-0 flex-1">
+          <dl>
+            <dt class="text-sm font-medium text-gray-500 truncate">同步失败</dt>
+            <dd class="text-lg font-medium text-gray-900"><%= @quota_summary[:sync_failed] %></dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 搜索和过滤 -->
+<div class="bg-white shadow rounded-lg mb-6">
+  <div class="px-6 py-4">
+    <%= form_with url: admin_account_quotas_path, method: :get, local: true, class: "grid grid-cols-1 gap-4 sm:grid-cols-5" do |form| %>
+      <div>
+        <%= form.text_field :search, 
+            placeholder: "搜索账号名称、服务名称或模型...", 
+            value: params[:search],
+            class: "block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+      </div>
+      
+      <div>
+        <%= form.select :model, 
+            options_for_select([
+              ['全部模型', 'all'],
+              ['Claude 3 Sonnet', 'claude-3-sonnet'],
+              ['Claude 3 Haiku', 'claude-3-haiku'],
+              ['Claude 3 Opus', 'claude-3-opus']
+            ], params[:model]), 
+            {}, 
+            class: "block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+      </div>
+      
+      <div>
+        <%= form.select :level, 
+            options_for_select([
+              ['全部等级', 'all'],
+              ['高配额', 'high'],
+              ['低配额', 'low'],
+              ['未知', 'unknown']
+            ], params[:level]), 
+            {}, 
+            class: "block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+      </div>
+      
+      <div>
+        <%= form.select :status, 
+            options_for_select([
+              ['全部状态', 'all'],
+              ['活跃配额', 'active'],
+              ['零配额', 'inactive'],
+              ['同步失败', 'sync_failed']
+            ], params[:status]), 
+            {}, 
+            class: "block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+      </div>
+      
+      <div class="flex space-x-2">
+        <%= form.submit "搜索", class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" %>
+        <%= link_to "重置", admin_account_quotas_path, 
+            class: "inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<!-- 配额列表 -->
+<div class="bg-white shadow overflow-hidden sm:rounded-md">
+  <div class="px-6 py-4 border-b border-gray-200">
+    <div class="flex items-center justify-between">
+      <h3 class="text-lg leading-6 font-medium text-gray-900">
+        配额列表 
+        <span class="text-sm font-normal text-gray-500">(<%= @account_quotas.total_count %> 个配额)</span>
+      </h3>
+      
+      <div class="flex items-center space-x-4">
+        <label class="inline-flex items-center">
+          <input type="checkbox" 
+                 id="select-all" 
+                 onchange="toggleAllCheckboxes(this)"
+                 class="form-checkbox h-4 w-4 text-indigo-600 transition duration-150 ease-in-out">
+          <span class="ml-2 text-sm text-gray-600">全选</span>
+        </label>
+        
+        <span class="text-sm text-gray-500">
+          已选择 <span id="selected-count">0</span> 个配额
+        </span>
+        
+        <button type="button" 
+                onclick="bulkRefresh()"
+                class="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded text-indigo-700 bg-indigo-100 hover:bg-indigo-200">
+          批量刷新
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <% if @account_quotas.any? %>
+    <ul class="divide-y divide-gray-200">
+      <% @account_quotas.each do |account_quota| %>
+        <li class="px-6 py-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+              <input type="checkbox" 
+                     name="quota_ids[]" 
+                     value="<%= account_quota.id %>"
+                     onchange="updateSelectedCount()"
+                     class="quota-checkbox form-checkbox h-4 w-4 text-indigo-600 transition duration-150 ease-in-out">
+              
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center space-x-3">
+                  <h4 class="text-sm font-medium text-gray-900 truncate">
+                    <%= link_to account_quota.quota_definition.service_name, admin_account_quota_path(account_quota), 
+                        class: "hover:text-indigo-600" %>
+                  </h4>
+                  
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                    <%= case account_quota.quota_level
+                        when 'high' then 'bg-green-100 text-green-800'
+                        when 'low' then 'bg-red-100 text-red-800'
+                        else 'bg-gray-100 text-gray-800'
+                        end %>">
+                    <%= account_quota.level_icon %> <%= account_quota.display_quota_level %>
+                  </span>
+                  
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                    <%= case account_quota.sync_status
+                        when 'success' then 'bg-green-100 text-green-800'
+                        when 'failed' then 'bg-red-100 text-red-800'
+                        else 'bg-yellow-100 text-yellow-800'
+                        end %>">
+                    <%= account_quota.sync_status.capitalize %>
+                  </span>
+                </div>
+                
+                <div class="mt-1">
+                  <p class="text-sm text-gray-500">
+                    账号: <%= link_to account_quota.aws_account.name, admin_aws_account_path(account_quota.aws_account), 
+                             class: "hover:text-indigo-600" %> | 
+                    模型: <%= account_quota.quota_definition.claude_model_name %> |
+                    当前配额: <%= number_with_delimiter(account_quota.current_quota) %>
+                  </p>
+                  <% if account_quota.last_sync_at %>
+                    <p class="text-xs text-gray-400 mt-1">
+                      最后同步: <%= time_ago_in_words(account_quota.last_sync_at) %>前
+                    </p>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+            
+            <div class="flex items-center space-x-2">
+              <%= link_to refresh_admin_account_quota_path(account_quota), 
+                  method: :post,
+                  class: "text-indigo-600 hover:text-indigo-900 text-sm font-medium",
+                  title: "刷新配额" do %>
+                <i class="fas fa-sync"></i>
+              <% end %>
+              
+              <%= link_to admin_account_quota_path(account_quota), 
+                  class: "text-indigo-600 hover:text-indigo-900 text-sm font-medium" do %>
+                查看
+              <% end %>
+            </div>
+          </div>
+        </li>
+      <% end %>
+    </ul>
+    
+    <!-- 分页 -->
+    <div class="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
+      <%= paginate @account_quotas if @account_quotas.total_pages > 1 %>
+    </div>
+  <% else %>
+    <div class="text-center py-12">
+      <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2-2V7a2 2 0 012-2h2a2 2 0 002 2v2a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 00-2 2h-2a2 2 0 00-2 2v6a2 2 0 01-2 2H9z" />
+      </svg>
+      <h3 class="mt-2 text-sm font-medium text-gray-900">没有找到配额</h3>
+      <p class="mt-1 text-sm text-gray-500">请检查搜索条件或联系管理员</p>
+    </div>
+  <% end %>
+</div>
+
+<script>
+function toggleAllCheckboxes(selectAllCheckbox) {
+  const checkboxes = document.querySelectorAll('.quota-checkbox');
+  checkboxes.forEach(checkbox => {
+    checkbox.checked = selectAllCheckbox.checked;
+  });
+  updateSelectedCount();
+}
+
+function updateSelectedCount() {
+  const checkedBoxes = document.querySelectorAll('.quota-checkbox:checked');
+  document.getElementById('selected-count').textContent = checkedBoxes.length;
+}
+
+function bulkRefresh() {
+  const checkedBoxes = document.querySelectorAll('.quota-checkbox:checked');
+  
+  if (checkedBoxes.length === 0) {
+    alert('请先选择要刷新的配额');
+    return;
+  }
+  
+  if (!confirm(`确定要刷新选中的 ${checkedBoxes.length} 个配额吗？`)) {
+    return;
+  }
+  
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = '<%= bulk_refresh_admin_account_quotas_path %>';
+  
+  // 添加CSRF token
+  const csrfInput = document.createElement('input');
+  csrfInput.type = 'hidden';
+  csrfInput.name = 'authenticity_token';
+  csrfInput.value = document.querySelector('meta[name="csrf-token"]').content;
+  form.appendChild(csrfInput);
+  
+  // 添加选中的配额ID
+  checkedBoxes.forEach(checkbox => {
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'quota_ids[]';
+    input.value = checkbox.value;
+    form.appendChild(input);
+  });
+  
+  document.body.appendChild(form);
+  form.submit();
+}
+
+// 页面加载时初始化选中计数
+document.addEventListener('DOMContentLoaded', function() {
+  updateSelectedCount();
+});
+</script>

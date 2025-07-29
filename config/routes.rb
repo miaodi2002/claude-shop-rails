@@ -25,7 +25,7 @@ Rails.application.routes.draw do
       end
     end
     
-    resources :quotas do
+    resources :account_quotas do
       member do
         post :refresh
       end
@@ -39,8 +39,8 @@ Rails.application.routes.draw do
     # Account-specific quota routes
     resources :aws_accounts do
       member do
-        get 'quotas', to: 'quotas#account_quotas', as: :account_quotas
-        post 'quotas/refresh', to: 'quotas#refresh_account_quotas', as: :refresh_account_quotas
+        get 'account_quotas', to: 'account_quotas#account_quotas', as: :account_quotas
+        post 'account_quotas/refresh', to: 'account_quotas#refresh_account_quotas', as: :refresh_account_quotas
       end
     end
     

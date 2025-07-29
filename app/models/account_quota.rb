@@ -118,6 +118,33 @@ class AccountQuota < ApplicationRecord
       "等待同步"
     end
   end
+
+  def display_quota_level
+    case quota_level
+    when 'high'
+      '高配额'
+    when 'low'
+      '低配额'
+    else
+      '未知'
+    end
+  end
+
+  def sync_status_display
+    display_sync_status
+  end
+
+  def has_high_quota?
+    quota_level == 'high'
+  end
+
+  def sync_success?
+    sync_status == 'success'
+  end
+
+  def needs_refresh?
+    last_sync_at.nil? || last_sync_at < 24.hours.ago
+  end
   
   private
   

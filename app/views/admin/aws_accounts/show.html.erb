@@ -84,9 +84,9 @@
       </div>
       
       <div class="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-        <dt class="text-sm font-medium text-gray-500">总配额限制</dt>
+        <dt class="text-sm font-medium text-gray-500">当前总配额</dt>
         <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-          <%= number_with_delimiter(@aws_account.account_quotas.sum(:quota_limit)) %>
+          <%= number_with_delimiter(@aws_account.account_quotas.sum(:current_quota)) %>
         </dd>
       </div>
       
@@ -251,9 +251,9 @@
               </div>
               
               <div class="flex justify-between text-sm">
-                <span class="text-gray-500">配额限制</span>
+                <span class="text-gray-500">默认配额</span>
                 <span class="font-medium text-gray-600">
-                  <%= number_with_delimiter(account_quota.quota_limit) %>
+                  <%= number_with_delimiter(account_quota.quota_definition.default_value) %>
                 </span>
               </div>
               
