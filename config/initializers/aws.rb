@@ -9,7 +9,6 @@ Aws.config.update(
   
   # Retry configuration
   retry_limit: 3,
-  retry_delay: 1,
   
   # HTTP configuration
   http_read_timeout: 30,

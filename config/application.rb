@@ -39,8 +39,12 @@ module App
     # Don't generate system test files.
     config.generators.system_tests = nil
     
+    # Internationalization configuration
+    config.i18n.default_locale = :'zh-CN'
+    config.i18n.available_locales = [:'zh-CN', :en]
+    
     # JWT Authentication Middleware
-    config.middleware.use JwtAuthenticationMiddleware
+    # config.middleware.use JwtAuthenticationMiddleware # TODO: Implement JWT middleware
     
     # API-only mode for /api routes
     config.api_only = false
@@ -48,11 +52,11 @@ module App
     # CORS configuration
     config.middleware.insert_before 0, Rack::Cors do
       allow do
-        origins Rails.env.development? ? '*' : []
+        origins Rails.env.development? ? 'http://localhost:3000' : []
         resource '/api/*',
           headers: :any,
           methods: [:get, :post, :put, :patch, :delete, :options, :head],
-          credentials: true
+          credentials: false
       end
     end
   end

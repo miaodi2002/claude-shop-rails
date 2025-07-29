@@ -1,0 +1,277 @@
+<%# Admin Quota Detail View %>
+<div class="bg-white">
+  <div class="px-4 py-5 border-b border-gray-200 sm:px-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold leading-tight text-gray-900">
+          配额详情 - <%= @quota.service_name %>
+        </h1>
+        <p class="mt-1 text-sm text-gray-500">
+          AWS账号: <%= @quota.aws_account.name %> (<%= @quota.aws_account.account_id %>)
+        </p>
+      </div>
+      <div class="flex space-x-3">
+        <%= link_to '返回列表', admin_quotas_path, 
+            class: "inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50" %>
+        <%= link_to '刷新配额', refresh_admin_quota_path(@quota), method: :post,
+            data: { confirm: '确定要刷新此配额吗？' },
+            class: "inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700" %>
+      </div>
+    </div>
+  </div>
+
+  <div class="px-6 py-6">
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <!-- 配额基本信息 -->
+      <div class="lg:col-span-2">
+        <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+          <div class="px-4 py-5 sm:px-6">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">配额信息</h3>
+            <p class="mt-1 max-w-2xl text-sm text-gray-500">当前配额使用情况和统计信息</p>
+          </div>
+          <div class="border-t border-gray-200">
+            <dl>
+              <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt class="text-sm font-medium text-gray-500">模型名称</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2"><%= @quota.service_name %></dd>
+              </div>
+              <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt class="text-sm font-medium text-gray-500">配额类型</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                  <%= @quota.quota_type_description %>
+                </dd>
+              </div>
+              <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt class="text-sm font-medium text-gray-500">配额限制</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                  <%= @quota.formatted_limit_value %>
+                </dd>
+              </div>
+              <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt class="text-sm font-medium text-gray-500">默认值</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                  <%= @quota.formatted_default_value %>
+                </dd>
+              </div>
+              <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt class="text-sm font-medium text-gray-500">可调整</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                  <span class="<%= @quota.is_adjustable? ? 'text-green-600' : 'text-gray-600' %>">
+                    <%= @quota.is_adjustable? ? '是' : '否' %>
+                  </span>
+                </dd>
+              </div>
+              <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt class="text-sm font-medium text-gray-500">配额等级</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                    <%= case @quota.quota_level
+                        when 'high' then 'bg-green-100 text-green-800'
+                        when 'low' then 'bg-red-100 text-red-800'
+                        else 'bg-gray-100 text-gray-800'
+                        end %>">
+                    <%= @quota.level_icon %> 
+                    <%= @quota.quota_level&.upcase || 'N/A' %>
+                  </span>
+                </dd>
+              </div>
+              <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt class="text-sm font-medium text-gray-500">更新状态</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                  <% case @quota.update_status %>
+                  <% when 'success' %>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">成功</span>
+                  <% when 'failed' %>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">失败</span>
+                  <% when 'pending' %>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">待更新</span>
+                  <% end %>
+                </dd>
+              </div>
+              <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt class="text-sm font-medium text-gray-500">最后更新</dt>
+                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                  <%= @quota.last_updated_at&.strftime('%Y-%m-%d %H:%M:%S') || '从未更新' %>
+                  <% if @quota.last_updated_at %>
+                    <span class="text-gray-500">(<%= time_ago_in_words(@quota.last_updated_at) %>前)</span>
+                  <% end %>
+                </dd>
+              </div>
+              <% if @quota.update_error_message.present? %>
+              <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                <dt class="text-sm font-medium text-gray-500">错误信息</dt>
+                <dd class="mt-1 text-sm text-red-600 sm:mt-0 sm:col-span-2">
+                  <%= @quota.update_error_message %>
+                </dd>
+              </div>
+              <% end %>
+            </dl>
+          </div>
+        </div>
+
+        <!-- AWS配额信息 -->
+        <div class="mt-6 bg-white shadow overflow-hidden sm:rounded-lg">
+          <div class="px-4 py-5 sm:px-6">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">AWS配额信息</h3>
+            <p class="mt-1 max-w-2xl text-sm text-gray-500">来自AWS API的配额详细信息</p>
+          </div>
+          <div class="px-4 py-5">
+            <div class="space-y-3">
+              <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-500">AWS配额代码</span>
+                <code class="text-xs bg-gray-100 px-2 py-1 rounded"><%= @quota.aws_quota_code || 'N/A' %></code>
+              </div>
+              
+              <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-500">配额等级评估</span>
+                <div class="flex items-center space-x-2">
+                  <span class="<%= @quota.quota_level == 'high' ? 'text-green-600' : 'text-red-600' %>">
+                    <%= @quota.quota_limit >= (@quota.default_value || 0) ? '高于默认值' : '低于默认值' %>
+                  </span>
+                </div>
+              </div>
+              
+              <% if @quota.update_error_message.present? %>
+                <div class="flex justify-between items-start">
+                  <span class="text-sm text-gray-500">错误信息</span>
+                  <span class="text-sm text-red-600 max-w-xs text-right"><%= @quota.update_error_message %></span>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 侧边栏信息 -->
+      <div class="space-y-6">
+        <!-- AWS账号信息 -->
+        <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+          <div class="px-4 py-5 sm:px-6">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">AWS账号信息</h3>
+          </div>
+          <div class="border-t border-gray-200 px-4 py-5">
+            <dl class="space-y-3">
+              <div>
+                <dt class="text-sm font-medium text-gray-500">账号名称</dt>
+                <dd class="mt-1 text-sm text-gray-900">
+                  <%= link_to @quota.aws_account.name, account_quotas_admin_aws_account_path(@quota.aws_account), 
+                      class: "text-indigo-600 hover:text-indigo-900" %>
+                </dd>
+              </div>
+              <div>
+                <dt class="text-sm font-medium text-gray-500">账号ID</dt>
+                <dd class="mt-1 text-sm text-gray-900"><%= @quota.aws_account.account_id %></dd>
+              </div>
+              <div>
+                <dt class="text-sm font-medium text-gray-500">区域</dt>
+                <dd class="mt-1 text-sm text-gray-900"><%= @quota.aws_account.region %></dd>
+              </div>
+              <div>
+                <dt class="text-sm font-medium text-gray-500">账号状态</dt>
+                <dd class="mt-1 text-sm text-gray-900">
+                  <% case @quota.aws_account.status %>
+                  <% when 'active' %>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">活跃</span>
+                  <% when 'inactive' %>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">停用</span>
+                  <% when 'sold_out' %>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">已售出</span>
+                  <% end %>
+                </dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+
+        <!-- 快速操作 -->
+        <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+          <div class="px-4 py-5 sm:px-6">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">快速操作</h3>
+          </div>
+          <div class="border-t border-gray-200 px-4 py-5">
+            <div class="space-y-3">
+              <%= link_to refresh_admin_quota_path(@quota), method: :post,
+                  data: { confirm: '确定要刷新此配额吗？' },
+                  class: "w-full inline-flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700" do %>
+                刷新配额数据
+              <% end %>
+              
+              <%= link_to account_quotas_admin_aws_account_path(@quota.aws_account),
+                  class: "w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50" do %>
+                查看账号所有配额
+              <% end %>
+              
+              <%= link_to refresh_account_quotas_admin_aws_account_path(@quota.aws_account), method: :post,
+                  data: { confirm: '确定要刷新该账号的所有配额吗？' },
+                  class: "w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50" do %>
+                刷新账号所有配额
+              <% end %>
+            </div>
+          </div>
+        </div>
+
+        <!-- 配额趋势摘要 -->
+        <% if @usage_trend.any? %>
+        <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+          <div class="px-4 py-5 sm:px-6">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">7天使用趋势</h3>
+          </div>
+          <div class="border-t border-gray-200 px-4 py-5">
+            <div class="text-sm text-gray-600">
+              <p class="mb-2">平均每日使用: <%= @usage_trend.values.sum / @usage_trend.size %></p>
+              <p>最高单日使用: <%= @usage_trend.values.max %></p>
+            </div>
+          </div>
+        </div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- 配额历史记录 -->
+    <% if @quota_histories.any? %>
+    <div class="mt-8">
+      <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:px-6">
+          <h3 class="text-lg leading-6 font-medium text-gray-900">配额历史记录</h3>
+          <p class="mt-1 max-w-2xl text-sm text-gray-500">最近50条配额变更记录</p>
+        </div>
+        <div class="border-t border-gray-200">
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">记录时间</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">配额限制</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">配额等级</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <% @quota_histories.each do |history| %>
+                <tr class="hover:bg-gray-50">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <%= history.recorded_at.strftime('%Y-%m-%d %H:%M') %>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <%= number_with_delimiter(history.quota_limit) %>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                      <%= case history.quota&.quota_level
+                          when 'high' then 'bg-green-100 text-green-800'
+                          when 'low' then 'bg-red-100 text-red-800'
+                          else 'bg-gray-100 text-gray-800'
+                          end %>">
+                      <%= history.quota&.quota_level&.upcase || 'N/A' %>
+                    </span>
+                  </td>
+                </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <% end %>
+  </div>
+</div>

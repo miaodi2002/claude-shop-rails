@@ -1,0 +1,373 @@
+<% content_for :page_title, @aws_account.account_name %>
+
+<% if @current_refresh_job %>
+  <meta http-equiv="refresh" content="5">
+<% end %>
+<% content_for :page_actions do %>
+  <%= link_to '返回列表', admin_aws_accounts_path, 
+      class: 'inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500' %>
+  
+  <%= link_to '编辑账号', edit_admin_aws_account_path(@aws_account), 
+      class: 'inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500' %>
+  
+  <% if @aws_account.active? %>
+    <% if @current_refresh_job %>
+      <div class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-yellow-600">
+        <svg class="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        刷新中... (<%= @current_refresh_job.progress_percentage %>%)
+      </div>
+    <% else %>
+      <%= form_with url: refresh_quota_admin_aws_account_path(@aws_account), method: :post, local: true, class: "inline-block" do |form| %>
+        <%= form.submit "🔄 刷新配额", 
+            class: 'inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 cursor-pointer' %>
+      <% end %>
+    <% end %>
+  <% end %>
+<% end %>
+
+<!-- 账号基本信息 -->
+<div class="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
+  <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+    <div class="flex items-center justify-between">
+      <div>
+        <h3 class="text-lg leading-6 font-medium text-gray-900">账号信息</h3>
+        <p class="mt-1 max-w-2xl text-sm text-gray-500">AWS账号的详细信息和配置</p>
+      </div>
+      
+      <div class="flex items-center space-x-4">
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+          <%= @aws_account.active? ? 'bg-green-100 text-green-800' : 
+             @aws_account.inactive? ? 'bg-gray-100 text-gray-800' : 
+             'bg-red-100 text-red-800' %>">
+          <%= I18n.t("aws_account.status.#{@aws_account.status}") %>
+        </span>
+        
+        <% if @aws_account.active? %>
+          <%= link_to deactivate_admin_aws_account_path(@aws_account), 
+              method: :patch,
+              data: { confirm: "确定要停用此账号吗？" },
+              class: "text-sm text-red-600 hover:text-red-900" do %>
+            停用账号
+          <% end %>
+        <% elsif @aws_account.inactive? %>
+          <%= link_to activate_admin_aws_account_path(@aws_account), 
+              method: :patch,
+              data: { confirm: "确定要激活此账号吗？" },
+              class: "text-sm text-green-600 hover:text-green-900" do %>
+            激活账号
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+  
+  <div class="px-4 py-5 sm:p-0">
+    <dl class="sm:divide-y sm:divide-gray-200">
+      <div class="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+        <dt class="text-sm font-medium text-gray-500">账号名称</dt>
+        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2"><%= @aws_account.account_name %></dd>
+      </div>
+      
+      <div class="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+        <dt class="text-sm font-medium text-gray-500">AWS账号ID</dt>
+        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+          <code class="bg-gray-100 px-2 py-1 rounded"><%= @aws_account.account_id %></code>
+        </dd>
+      </div>
+      
+      <div class="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+        <dt class="text-sm font-medium text-gray-500">区域</dt>
+        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2"><%= @aws_account.region %></dd>
+      </div>
+      
+      <div class="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+        <dt class="text-sm font-medium text-gray-500">总配额</dt>
+        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+          <%= number_with_delimiter(@aws_account.quotas.sum(:quota_limit)) %>
+        </dd>
+      </div>
+      
+      <% if @aws_account.description.present? %>
+        <div class="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+          <dt class="text-sm font-medium text-gray-500">描述</dt>
+          <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2"><%= @aws_account.description %></dd>
+        </div>
+      <% end %>
+      
+      <div class="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+        <dt class="text-sm font-medium text-gray-500">创建时间</dt>
+        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+          <%= @aws_account.created_at.strftime('%Y年%m月%d日 %H:%M') %>
+        </dd>
+      </div>
+      
+      <div class="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+        <dt class="text-sm font-medium text-gray-500">最后更新</dt>
+        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+          <%= @aws_account.updated_at.strftime('%Y年%m月%d日 %H:%M') %>
+        </dd>
+      </div>
+    </dl>
+  </div>
+</div>
+
+<!-- 刷新任务状态 -->
+<% if @recent_refresh_jobs.any? %>
+  <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
+    <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+      <h3 class="text-lg leading-6 font-medium text-gray-900">最近刷新任务</h3>
+      <p class="mt-1 max-w-2xl text-sm text-gray-500">配额刷新任务的执行状态和结果</p>
+    </div>
+    
+    <div class="px-4 py-5 sm:p-6">
+      <div class="flow-root">
+        <ul class="-mb-8">
+          <% @recent_refresh_jobs.each_with_index do |job, index| %>
+            <li>
+              <div class="relative pb-8">
+                <% unless index == @recent_refresh_jobs.length - 1 %>
+                  <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                <% end %>
+                <div class="relative flex space-x-3">
+                  <div>
+                    <span class="h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white
+                      <%= case job.status
+                          when 'completed' then 'bg-green-500'
+                          when 'failed' then 'bg-red-500' 
+                          when 'running' then 'bg-yellow-500'
+                          when 'pending' then 'bg-gray-400'
+                          else 'bg-gray-300'
+                          end %>">
+                      <% case job.status %>
+                      <% when 'completed' %>
+                        <svg class="h-5 w-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                        </svg>
+                      <% when 'failed' %>
+                        <svg class="h-5 w-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                        </svg>
+                      <% when 'running' %>
+                        <svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      <% else %>
+                        <svg class="h-5 w-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                        </svg>
+                      <% end %>
+                    </span>
+                  </div>
+                  <div class="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
+                    <div>
+                      <p class="text-sm text-gray-500">
+                        <%= job.display_job_type %>刷新任务
+                        <span class="font-medium text-gray-900"><%= job.display_status %></span>
+                      </p>
+                      <% if job.completed? %>
+                        <p class="text-sm text-gray-600">
+                          <%= job.detailed_result %> 
+                          <span class="text-gray-500">(耗时: <%= job.duration_in_words %>)</span>
+                        </p>
+                      <% elsif job.failed? %>
+                        <p class="text-sm text-red-600">
+                          <%= job.error_message %>
+                        </p>
+                      <% elsif job.running? %>
+                        <p class="text-sm text-yellow-600">
+                          进度: <%= job.progress_percentage %>%
+                        </p>
+                      <% end %>
+                    </div>
+                    <div class="text-right text-sm whitespace-nowrap text-gray-500">
+                      <time datetime="<%= job.created_at.iso8601 %>">
+                        <%= time_ago_in_words(job.created_at) %>前
+                      </time>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </li>
+          <% end %>
+        </ul>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<!-- 配额信息 -->
+<div class="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
+  <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+    <h3 class="text-lg leading-6 font-medium text-gray-900">配额信息</h3>
+    <p class="mt-1 max-w-2xl text-sm text-gray-500">各项服务的配额使用情况</p>
+  </div>
+  
+  <div class="px-4 py-5 sm:p-6">
+    <% if @quotas.any? %>
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <% @quotas.each do |quota| %>
+          <div class="border border-gray-200 rounded-lg p-4">
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="text-sm font-medium text-gray-900"><%= quota.service_name %></h4>
+              <span class="text-xs text-gray-500">
+                <%= quota.last_updated_at&.strftime('%m/%d %H:%M') || '未更新' %>
+              </span>
+            </div>
+            
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs text-gray-500">配额类型</span>
+              <span class="text-xs font-medium text-blue-600">
+                <%= quota.quota_type_description %>
+              </span>
+            </div>
+            
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs text-gray-500">配额等级</span>
+              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                <%= case quota.quota_level
+                    when 'high' then 'bg-green-100 text-green-800'
+                    when 'low' then 'bg-red-100 text-red-800'
+                    else 'bg-gray-100 text-gray-800'
+                    end %>">
+                <%= quota.level_icon %> 
+                <%= quota.quota_level&.upcase || 'N/A' %>
+              </span>
+            </div>
+            
+            <div class="space-y-2">
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-500">配额限制</span>
+                <span class="font-medium"><%= quota.formatted_limit_value %></span>
+              </div>
+              
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-500">默认值</span>
+                <span class="font-medium text-gray-600">
+                  <%= quota.formatted_default_value %>
+                </span>
+              </div>
+              
+              <% if quota.is_adjustable? %>
+                <div class="flex justify-between text-sm">
+                  <span class="text-gray-500">可调整</span>
+                  <span class="text-green-600 font-medium">是</span>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="text-center py-8">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2-2V7a2 2 0 012-2h2a2 2 0 002 2v2a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 00-2 2h-2a2 2 0 00-2 2v6a2 2 0 01-2 2H9z" />
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900">暂无配额数据</h3>
+        <p class="mt-1 text-sm text-gray-500">
+          <%= @aws_account.active? ? '点击上方"刷新配额"按钮获取最新数据' : '激活账号后可获取配额数据' %>
+        </p>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<!-- 配额历史 -->
+<% if @recent_quota_histories.any? %>
+  <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
+    <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+      <h3 class="text-lg leading-6 font-medium text-gray-900">最近配额变更</h3>
+      <p class="mt-1 max-w-2xl text-sm text-gray-500">最近10次配额更新记录</p>
+    </div>
+    
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">服务</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">配额限制</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">配额等级</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">更新时间</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <% @recent_quota_histories.each do |history| %>
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                <%= history.service_code %>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <%= number_with_delimiter(history.quota_limit) %>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                  <%= case history.quota&.quota_level
+                      when 'high' then 'bg-green-100 text-green-800'
+                      when 'low' then 'bg-red-100 text-red-800'
+                      else 'bg-gray-100 text-gray-800'
+                      end %>">
+                  <%= history.quota&.quota_level&.upcase || 'N/A' %>
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <%= history.created_at.strftime('%m月%d日 %H:%M') %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+<% end %>
+
+<!-- 审计日志 -->
+<% if @audit_logs.any? %>
+  <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+    <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-lg leading-6 font-medium text-gray-900">最近操作记录</h3>
+          <p class="mt-1 max-w-2xl text-sm text-gray-500">最近5次操作记录</p>
+        </div>
+        <%= link_to admin_audit_logs_path(resource_type: 'AwsAccount', resource_id: @aws_account.id), 
+            class: "text-sm text-indigo-600 hover:text-indigo-900" do %>
+          查看全部 →
+        <% end %>
+      </div>
+    </div>
+    
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作人</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">详情</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">时间</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <% @audit_logs.each do |log| %>
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                <%= I18n.t("audit_log.action.#{log.action}", default: log.action.humanize) %>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <%= log.admin&.display_name || '系统' %>
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
+                <%= log.details %>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <%= time_ago_in_words(log.created_at) %>前
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+<% end %>

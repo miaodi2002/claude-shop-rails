@@ -2,7 +2,7 @@
 
 class AuditLog < ApplicationRecord
   # Associations
-  belongs_to :admin, optional: true
+  belongs_to :admin, class_name: 'AdminUser', foreign_key: 'admin_id', optional: true
   belongs_to :target, polymorphic: true, optional: true
 
   # Validations
@@ -42,7 +42,7 @@ class AuditLog < ApplicationRecord
       target: options[:target],
       target_type: options[:target_type] || options[:target]&.class&.name,
       target_id: options[:target_id] || options[:target]&.id,
-      changes: options[:changes],
+      change_details: options[:changes] || options[:change_details],
       metadata: options[:metadata],
       ip_address: options[:ip_address],
       user_agent: options[:user_agent],
@@ -115,15 +115,20 @@ class AuditLog < ApplicationRecord
   end
 
   def changes_summary
-    return '' unless changes.present?
+    return '' unless change_details.present?
     
-    changes.map do |key, value|
+    change_details.map do |key, value|
       if value.is_a?(Array) && value.length == 2
         "#{key}: #{value[0]} → #{value[1]}"
       else
         "#{key}: #{value}"
       end
     end.join(', ')
+  end
+
+  # Alias for backward compatibility
+  def changes
+    change_details
   end
 
   private

@@ -1,0 +1,46 @@
+zh-CN:
+  aws_account:
+    status:
+      active: "活跃"
+      inactive: "停用"
+      sold_out: "已售出"
+      maintenance: "维护中"
+    connection_status:
+      connected: "已连接"
+      error: "连接错误"
+      unknown: "未知状态"
+  
+  refresh_job:
+    status:
+      pending: "等待中"
+      running: "进行中"
+      completed: "已完成"
+      failed: "失败"
+      cancelled: "已取消"
+      partially_completed: "部分完成"
+    job_type:
+      manual: "手动刷新"
+      automatic: "自动刷新"
+      scheduled: "定时刷新"
+      bulk_refresh: "批量刷新"
+  
+  audit_log:
+    action:
+      create: "创建"
+      update: "更新"
+      delete: "删除"
+      activate: "激活"
+      deactivate: "停用"
+      refresh_quota: "刷新配额"
+      bulk_refresh: "批量刷新"
+      bulk_refresh_quota: "批量刷新配额"
+      bulk_refresh_quota_failed: "批量刷新失败"
+      login: "登录"
+      logout: "登出"
+  
+  quota:
+    update_status:
+      success: "成功"
+      failed: "失败"
+      pending: "等待中"
+      warning: "警告"
