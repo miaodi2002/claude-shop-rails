@@ -84,9 +84,16 @@
       </div>
       
       <div class="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-        <dt class="text-sm font-medium text-gray-500">总配额</dt>
+        <dt class="text-sm font-medium text-gray-500">总配额限制</dt>
         <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-          <%= number_with_delimiter(@aws_account.quotas.sum(:quota_limit)) %>
+          <%= number_with_delimiter(@aws_account.account_quotas.sum(:quota_limit)) %>
+        </dd>
+      </div>
+      
+      <div class="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+        <dt class="text-sm font-medium text-gray-500">活跃配额数量</dt>
+        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+          <%= @aws_account.account_quotas.where('current_quota > 0').count %>
         </dd>
       </div>
       
@@ -207,51 +214,50 @@
   </div>
   
   <div class="px-4 py-5 sm:p-6">
-    <% if @quotas.any? %>
+    <% if @account_quotas.any? %>
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <% @quotas.each do |quota| %>
+        <% @account_quotas.each do |account_quota| %>
           <div class="border border-gray-200 rounded-lg p-4">
             <div class="flex items-center justify-between mb-2">
-              <h4 class="text-sm font-medium text-gray-900"><%= quota.service_name %></h4>
+              <h4 class="text-sm font-medium text-gray-900"><%= account_quota.quota_definition.service_name %></h4>
               <span class="text-xs text-gray-500">
-                <%= quota.last_updated_at&.strftime('%m/%d %H:%M') || '未更新' %>
+                <%= account_quota.last_refreshed_at&.strftime('%m/%d %H:%M') || '未更新' %>
               </span>
             </div>
             
             <div class="flex items-center justify-between mb-1">
-              <span class="text-xs text-gray-500">配额类型</span>
+              <span class="text-xs text-gray-500">Claude模型</span>
               <span class="text-xs font-medium text-blue-600">
-                <%= quota.quota_type_description %>
+                <%= account_quota.quota_definition.claude_model_name %>
               </span>
             </div>
             
             <div class="flex items-center justify-between mb-2">
               <span class="text-xs text-gray-500">配额等级</span>
               <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
-                <%= case quota.quota_level
+                <%= case account_quota.quota_definition.quota_level
                     when 'high' then 'bg-green-100 text-green-800'
                     when 'low' then 'bg-red-100 text-red-800'
                     else 'bg-gray-100 text-gray-800'
                     end %>">
-                <%= quota.level_icon %> 
-                <%= quota.quota_level&.upcase || 'N/A' %>
+                <%= account_quota.quota_definition.quota_level&.upcase || 'N/A' %>
               </span>
             </div>
             
             <div class="space-y-2">
               <div class="flex justify-between text-sm">
-                <span class="text-gray-500">配额限制</span>
-                <span class="font-medium"><%= quota.formatted_limit_value %></span>
+                <span class="text-gray-500">当前配额</span>
+                <span class="font-medium"><%= number_with_delimiter(account_quota.current_quota) %></span>
               </div>
               
               <div class="flex justify-between text-sm">
-                <span class="text-gray-500">默认值</span>
+                <span class="text-gray-500">配额限制</span>
                 <span class="font-medium text-gray-600">
-                  <%= quota.formatted_default_value %>
+                  <%= number_with_delimiter(account_quota.quota_limit) %>
                 </span>
               </div>
               
-              <% if quota.is_adjustable? %>
+              <% if account_quota.quota_definition.is_adjustable? %>
                 <div class="flex justify-between text-sm">
                   <span class="text-gray-500">可调整</span>
                   <span class="text-green-600 font-medium">是</span>

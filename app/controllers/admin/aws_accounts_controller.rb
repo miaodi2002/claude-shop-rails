@@ -5,10 +5,12 @@ module Admin
     before_action :set_aws_account, only: [:show, :edit, :update, :destroy, :activate, :deactivate, :refresh_quota]
     
     def index
-      @aws_accounts = filtered_accounts.order(:id).page(params[:page]).per(20) # removed :quotas include
+      @aws_accounts = filtered_accounts.includes(:account_quotas).order(:id).page(params[:page]).per(20)
       @total_accounts = AwsAccount.count
       @active_accounts = AwsAccount.active.count
-      @total_quota_remaining = 0 # Quota.sum(:quota_remaining)
+      @high_quota_count = AccountQuota.joins(:quota_definition)
+                                     .where('current_quota > 0')
+                                     .count
       
       respond_to do |format|
         format.html
@@ -17,9 +19,8 @@ module Admin
     end
     
     def show
-      @quotas = @aws_account.quotas.includes(:quota_histories).order(:service_name)
-      @recent_quota_histories = [] # @aws_account.quota_histories.recent.limit(10)
-      @audit_logs = [] # @aws_account.audit_logs.recent.limit(5)
+      @account_quotas = @aws_account.account_quotas.includes(:quota_definition).order('quota_definitions.service_name')
+      @audit_logs = @aws_account.audit_logs.recent.limit(5)
       
       # 获取该账号最近的刷新任务
       @recent_refresh_jobs = RefreshJob.for_account(@aws_account).recent.limit(5)
@@ -140,7 +141,7 @@ module Admin
     
     # 导出数据
     def export
-      accounts = filtered_accounts.includes(:quotas)
+      accounts = filtered_accounts.includes(:account_quotas)
       
       respond_to do |format|
         format.csv do
@@ -151,7 +152,7 @@ module Admin
         end
         format.json do
           render json: {
-            accounts: accounts.as_json(include: :quotas),
+            accounts: accounts.as_json(include: :account_quotas),
             exported_at: Time.current,
             total_count: accounts.count
           }
@@ -199,11 +200,11 @@ module Admin
       # 配额过滤
       case params[:quota_filter]
       when 'available'
-        scope = scope.joins(:quotas).where('quotas.quota_remaining > 0')
+        scope = scope.joins(:account_quotas).where('account_quotas.current_quota > 0')
       when 'exhausted'
-        scope = scope.joins(:quotas).where('quotas.quota_remaining <= 0')
+        scope = scope.joins(:account_quotas).where('account_quotas.current_quota <= 0')
       when 'no_quota'
-        scope = scope.left_joins(:quotas).where(quotas: { id: nil })
+        scope = scope.left_joins(:account_quotas).where(account_quotas: { id: nil })
       end
       
       scope
@@ -214,9 +215,12 @@ module Admin
         accounts: @aws_accounts.map do |account|
           account.as_json(
             include: {
-              quotas: { only: [:service_code, :quota_remaining, :quota_used] }
+              account_quotas: { 
+                include: :quota_definition,
+                only: [:current_quota, :quota_limit, :last_refreshed_at] 
+              }
             },
-            methods: [:display_status, :total_quota_remaining]
+            methods: [:display_status, :masked_access_key]
           )
         end,
         pagination: {
@@ -228,7 +232,7 @@ module Admin
         summary: {
           total_accounts: @total_accounts,
           active_accounts: @active_accounts,
-          total_quota_remaining: @total_quota_remaining
+          high_quota_count: @high_quota_count
         }
       }
     end
@@ -250,18 +254,21 @@ module Admin
       CSV.generate(headers: true) do |csv|
         csv << [
           'ID', '账号名称', 'AWS账号ID', '区域', '状态', 
-          '总配额', '剩余配额', '描述', '创建时间', '更新时间'
+          '活跃配额数量', '总配额限制', '描述', '创建时间', '更新时间'
         ]
         
         accounts.each do |account|
+          active_quotas = account.account_quotas.where('current_quota > 0').count
+          total_quota_limit = account.account_quotas.sum(:quota_limit)
+          
           csv << [
             account.id,
             account.name,
             account.account_id,
             account.region,
             I18n.t("aws_account.status.#{account.status}"),
-            account.quotas.sum(:quota_limit),
-            account.quotas.sum(:quota_remaining),
+            active_quotas,
+            total_quota_limit,
             account.description,
             account.created_at.strftime('%Y-%m-%d %H:%M'),
             account.updated_at.strftime('%Y-%m-%d %H:%M')
