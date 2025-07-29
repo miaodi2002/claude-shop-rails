@@ -1,0 +1,12 @@
+<% content_for :page_title, "编辑账号 - #{@aws_account.account_name}" %>
+<% content_for :page_actions do %>
+  <%= link_to '返回详情', admin_aws_account_path(@aws_account), 
+      class: 'inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500' %>
+  
+  <%= link_to '返回列表', admin_aws_accounts_path, 
+      class: 'inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500' %>
+<% end %>
+
+<div class="max-w-4xl">
+  <%= render 'form', aws_account: @aws_account %>
+</div>

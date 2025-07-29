@@ -1,0 +1,403 @@
+<%# Admin Audit Logs Index %>
+<div class="bg-white">
+  <div class="px-4 py-5 border-b border-gray-200 sm:px-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold leading-tight text-gray-900">审计日志</h1>
+        <p class="mt-1 text-sm text-gray-500">系统操作记录和安全审计</p>
+      </div>
+      <div class="flex space-x-3">
+        <%= link_to '导出CSV', export_admin_audit_logs_path(format: :csv, **request.query_parameters), 
+            class: "inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50" %>
+        <%= link_to '导出JSON', export_admin_audit_logs_path(format: :json, **request.query_parameters), 
+            class: "inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50" %>
+      </div>
+    </div>
+  </div>
+
+  <!-- 统计信息 -->
+  <div class="px-6 py-6 border-b border-gray-200">
+    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="bg-white overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
+                <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+              </div>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 truncate">总日志数</dt>
+                <dd class="text-lg font-medium text-gray-900"><%= number_with_delimiter(@log_stats[:total_logs]) %></dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
+                <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                </svg>
+              </div>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 truncate">成功操作</dt>
+                <dd class="text-lg font-medium text-gray-900"><%= number_with_delimiter(@log_stats[:successful_logs]) %></dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-red-500 rounded-md flex items-center justify-center">
+                <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                </svg>
+              </div>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 truncate">失败操作</dt>
+                <dd class="text-lg font-medium text-gray-900"><%= number_with_delimiter(@log_stats[:failed_logs]) %></dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center">
+                <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/>
+                </svg>
+              </div>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 truncate">活跃管理员</dt>
+                <dd class="text-lg font-medium text-gray-900"><%= @log_stats[:unique_admins] %></dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 安全统计 -->
+    <div class="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-3">
+      <div class="bg-yellow-50 overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <svg class="w-8 h-8 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/>
+              </svg>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 truncate">登录尝试</dt>
+                <dd class="text-lg font-medium text-gray-900"><%= @log_stats[:login_attempts] %></dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-red-50 overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <svg class="w-8 h-8 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+              </svg>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 truncate">登录失败</dt>
+                <dd class="text-lg font-medium text-gray-900"><%= @log_stats[:failed_logins] %></dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-green-50 overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <svg class="w-8 h-8 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+              </svg>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 truncate">近1小时活动</dt>
+                <dd class="text-lg font-medium text-gray-900"><%= @log_stats[:recent_activity] %></dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 搜索和过滤 -->
+  <div class="px-6 py-4 border-b border-gray-200">
+    <%= form_with url: admin_audit_logs_path, method: :get, local: true, class: "space-y-4" do |form| %>
+      <!-- 搜索框 -->
+      <div class="flex items-center space-x-4">
+        <div class="flex-1">
+          <%= form.text_field :search, 
+              placeholder: "搜索操作、IP地址、错误信息...", 
+              value: params[:search],
+              class: "block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+        </div>
+        <%= form.submit "搜索", class: "inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700" %>
+        <%= link_to "重置", admin_audit_logs_path, class: "inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50" %>
+      </div>
+
+      <!-- 过滤器 -->
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div>
+          <%= form.select :action_filter, 
+              options_for_select([['所有操作', 'all']] + @action_filter_options, params[:action_filter]),
+              {},
+              { class: "block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" } %>
+        </div>
+        
+        <div>
+          <%= form.select :admin_filter, 
+              options_for_select([['所有管理员', 'all']] + @admin_filter_options, params[:admin_filter]),
+              {},
+              { class: "block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" } %>
+        </div>
+        
+        <div>
+          <%= form.select :target_type_filter, 
+              options_for_select([['所有类型', 'all']] + @target_type_options, params[:target_type_filter]),
+              {},
+              { class: "block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" } %>
+        </div>
+        
+        <div>
+          <%= form.select :status_filter, 
+              options_for_select([
+                ['所有状态', 'all'],
+                ['成功', 'successful'],
+                ['失败', 'failed']
+              ], params[:status_filter]),
+              {},
+              { class: "block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" } %>
+        </div>
+        
+        <div>
+          <%= form.select :time_range, 
+              options_for_select([
+                ['所有时间', 'all'],
+                ['今天', 'today'],
+                ['本周', 'week'],
+                ['本月', 'month'],
+                ['自定义', 'custom']
+              ], params[:time_range]),
+              {},
+              { class: "block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm", 
+                onchange: "toggleCustomDateRange(this.value)" } %>
+        </div>
+      </div>
+
+      <!-- 自定义时间范围 -->
+      <div id="custom-date-range" class="<%= 'hidden' unless params[:time_range] == 'custom' %> grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <%= form.date_field :start_date, 
+              value: params[:start_date],
+              class: "block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+          <p class="mt-1 text-sm text-gray-500">开始日期</p>
+        </div>
+        <div>
+          <%= form.date_field :end_date, 
+              value: params[:end_date],
+              class: "block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+          <p class="mt-1 text-sm text-gray-500">结束日期</p>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- 日志列表 -->
+  <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+    <div class="min-w-full divide-y divide-gray-300">
+      <div class="bg-gray-50">
+        <div class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider grid grid-cols-12 gap-4 items-center">
+          <div class="col-span-2">时间</div>
+          <div class="col-span-1">管理员</div>
+          <div class="col-span-1">操作</div>
+          <div class="col-span-2">目标</div>
+          <div class="col-span-2">IP地址</div>
+          <div class="col-span-1">状态</div>
+          <div class="col-span-2">详情</div>
+          <div class="col-span-1">操作</div>
+        </div>
+      </div>
+      <div class="bg-white divide-y divide-gray-200">
+        <% if @audit_logs.any? %>
+          <% @audit_logs.each do |log| %>
+            <div class="px-6 py-4 grid grid-cols-12 gap-4 items-center hover:bg-gray-50">
+              <div class="col-span-2">
+                <div class="text-sm text-gray-900"><%= log.created_at.strftime('%Y-%m-%d') %></div>
+                <div class="text-xs text-gray-500"><%= log.created_at.strftime('%H:%M:%S') %></div>
+              </div>
+              
+              <div class="col-span-1">
+                <div class="text-sm text-gray-900">
+                  <%= log.admin&.username || '系统' %>
+                </div>
+              </div>
+              
+              <div class="col-span-1">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                  <%= case log.action
+                      when 'login' then 'bg-green-100 text-green-800'
+                      when 'login_failed' then 'bg-red-100 text-red-800'
+                      when 'logout' then 'bg-blue-100 text-blue-800'
+                      when 'create' then 'bg-green-100 text-green-800'
+                      when 'update' then 'bg-yellow-100 text-yellow-800'
+                      when 'delete' then 'bg-red-100 text-red-800'
+                      else 'bg-gray-100 text-gray-800'
+                      end %>">
+                  <%= log.display_action %>
+                </span>
+              </div>
+              
+              <div class="col-span-2">
+                <% if log.target_type.present? %>
+                  <div class="text-sm text-gray-900"><%= log.target_type %></div>
+                  <div class="text-xs text-gray-500"><%= log.target_display_name %></div>
+                <% else %>
+                  <div class="text-sm text-gray-500">-</div>
+                <% end %>
+              </div>
+              
+              <div class="col-span-2">
+                <div class="text-sm text-gray-900"><%= log.ip_address || '未知' %></div>
+                <% if log.user_agent.present? %>
+                  <div class="text-xs text-gray-500" title="<%= log.user_agent %>">
+                    <%= truncate(log.user_agent, length: 30) %>
+                  </div>
+                <% end %>
+              </div>
+              
+              <div class="col-span-1">
+                <% if log.successful? %>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    成功
+                  </span>
+                <% else %>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                    失败
+                  </span>
+                <% end %>
+              </div>
+              
+              <div class="col-span-2">
+                <% if log.changes_summary.present? %>
+                  <div class="text-sm text-gray-900" title="<%= log.changes_summary %>">
+                    <%= truncate(log.changes_summary, length: 40) %>
+                  </div>
+                <% end %>
+                <% if log.error_message.present? %>
+                  <div class="text-xs text-red-600" title="<%= log.error_message %>">
+                    <%= truncate(log.error_message, length: 40) %>
+                  </div>
+                <% end %>
+              </div>
+              
+              <div class="col-span-1">
+                <%= link_to admin_audit_log_path(log), 
+                    class: "text-indigo-600 hover:text-indigo-900 text-sm" do %>
+                  查看
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        <% else %>
+          <div class="px-6 py-8 text-center">
+            <div class="text-gray-500">
+              <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+              </svg>
+              <h3 class="mt-2 text-sm font-medium text-gray-900">暂无审计日志</h3>
+              <p class="mt-1 text-sm text-gray-500">系统操作记录将在此处显示</p>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <!-- 分页 -->
+  <% if @audit_logs.respond_to?(:current_page) %>
+    <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+      <div class="flex-1 flex justify-between sm:hidden">
+        <% if @audit_logs.prev_page %>
+          <%= link_to "上一页", admin_audit_logs_path(page: @audit_logs.prev_page, **request.query_parameters.except('page')), 
+              class: "relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" %>
+        <% end %>
+        <% if @audit_logs.next_page %>
+          <%= link_to "下一页", admin_audit_logs_path(page: @audit_logs.next_page, **request.query_parameters.except('page')), 
+              class: "ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" %>
+        <% end %>
+      </div>
+      <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+        <div>
+          <p class="text-sm text-gray-700">
+            显示 <span class="font-medium"><%= (@audit_logs.current_page - 1) * @audit_logs.limit_value + 1 %></span> 到 
+            <span class="font-medium"><%= [@audit_logs.current_page * @audit_logs.limit_value, @audit_logs.total_count].min %></span> 条，
+            共 <span class="font-medium"><%= @audit_logs.total_count %></span> 条记录
+          </p>
+        </div>
+        <div>
+          <%= paginate @audit_logs if defined?(Kaminari) %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+<script>
+function toggleCustomDateRange(value) {
+  const customRange = document.getElementById('custom-date-range');
+  if (value === 'custom') {
+    customRange.classList.remove('hidden');
+  } else {
+    customRange.classList.add('hidden');
+  }
+}
+
+// 自动提交过滤器变更
+document.addEventListener('DOMContentLoaded', function() {
+  const filterSelects = document.querySelectorAll('select[name$="_filter"], select[name="time_range"]');
+  filterSelects.forEach(select => {
+    select.addEventListener('change', function() {
+      if (this.name !== 'time_range' || this.value !== 'custom') {
+        this.form.submit();
+      }
+    });
+  });
+});
+</script>

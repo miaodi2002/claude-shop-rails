@@ -8,28 +8,42 @@ class AwsAccount < ApplicationRecord
   attr_encrypted :secret_key, 
                  key: ENV.fetch('ATTR_ENCRYPTED_KEY', 'your_32_character_encryption_key_here_123456')[0..31],
                  encode: true,
-                 encode_iv: true,
-                 encode_salt: true
+                 algorithm: 'aes-256-cbc',
+                 attribute: 'secret_key_encrypted',
+                 iv_attribute: 'secret_key_encrypted_iv'
 
   # Enums
-  enum status: {
-    available: 0,
-    sold_out: 1,
-    maintenance: 2,
-    offline: 3
+  enum :status, {
+    active: 0,
+    inactive: 1,
+    sold_out: 2,
+    maintenance: 3
   }
 
-  enum connection_status: {
+  enum :connection_status, {
     connected: 0,
     error: 1,
     unknown: 2
   }
 
   # Associations
-  has_many :quotas, dependent: :destroy
-  has_many :quota_histories, dependent: :destroy
+  has_many :account_quotas, dependent: :destroy
+  has_many :quota_definitions, through: :account_quotas
   has_many :refresh_jobs, dependent: :nullify
   has_many :audit_logs, as: :target, dependent: :destroy
+
+  # Virtual attributes
+  def tags
+    read_attribute(:tags) || []
+  end
+  
+  def tags=(value)
+    if value.is_a?(String)
+      write_attribute(:tags, value.split(',').map(&:strip).reject(&:blank?))
+    else
+      write_attribute(:tags, value)
+    end
+  end
 
   # Validations
   validates :account_id, presence: true, uniqueness: true, 
@@ -46,13 +60,12 @@ class AwsAccount < ApplicationRecord
   
   # Callbacks
   before_validation :set_default_values
-  after_create :create_initial_quotas
   after_create :test_connection_async
 
   # Scopes
-  scope :active, -> { where(status: [:available, :maintenance]) }
-  scope :public_visible, -> { where(status: :available) }
-  scope :with_quotas, -> { includes(:quotas) }
+  scope :active, -> { where(status: :active) }
+  scope :public_visible, -> { where(status: :active) }
+  scope :with_quotas, -> { includes(:account_quotas, :quota_definitions) }
   scope :by_status, ->(status) { where(status: status) }
   scope :search, ->(query) { 
     where("name LIKE :q OR account_id LIKE :q OR description LIKE :q", q: "%#{query}%") 
@@ -60,7 +73,7 @@ class AwsAccount < ApplicationRecord
 
   # Soft delete
   def soft_delete!
-    update!(deleted_at: Time.current, status: :offline)
+    update!(deleted_at: Time.current, status: :inactive)
   end
 
   def deleted?
@@ -68,7 +81,7 @@ class AwsAccount < ApplicationRecord
   end
 
   def restore!
-    update!(deleted_at: nil, status: :available)
+    update!(deleted_at: nil, status: :active)
   end
 
   # Connection testing
@@ -77,13 +90,13 @@ class AwsAccount < ApplicationRecord
     # For now, return mock result
     update!(
       connection_status: :connected,
-      last_connected_at: Time.current
+      last_connection_test_at: Time.current
     )
     true
   rescue => e
     update!(
       connection_status: :error,
-      connection_error: e.message
+      connection_error_message: e.message
     )
     false
   end
@@ -94,22 +107,12 @@ class AwsAccount < ApplicationRecord
   end
 
   # Quota management
-  def total_quota_remaining
-    quotas.sum(:quota_remaining)
-  end
-
-  def has_quota?
-    total_quota_remaining > 0
+  def has_high_quota?
+    account_quotas.high_level.exists?
   end
 
   def refresh_quotas!
-    # This will be implemented with AWS service
-    quotas.find_or_create_by(model_name: 'Claude-3.5-Sonnet').update!(
-      quota_limit: 1000,
-      quota_used: 0,
-      quota_remaining: 1000,
-      last_updated_at: Time.current
-    )
+    AwsQuotaService.refresh_all_quotas(self)
   end
 
   # Display helpers
@@ -119,6 +122,11 @@ class AwsAccount < ApplicationRecord
 
   def display_connection_status
     I18n.t("aws_account.connection_status.#{connection_status}")
+  end
+
+  # Alias for compatibility with views
+  def account_name
+    name
   end
 
   def masked_access_key
@@ -132,11 +140,14 @@ class AwsAccount < ApplicationRecord
 
   # Claude model availability
   def available_models
-    quotas.where('quota_remaining > 0').pluck(:model_name)
+    account_quotas.joins(:quota_definition)
+                  .where('current_quota > 0')
+                  .pluck('quota_definitions.claude_model_name')
+                  .uniq
   end
 
-  def model_quota(model_name)
-    quotas.find_by(model_name: model_name)
+  def model_quotas(model_name)
+    account_quotas.by_model(model_name)
   end
 
   # Auditable configuration
@@ -147,8 +158,8 @@ class AwsAccount < ApplicationRecord
       account_name: name,
       account_status: status,
       connection_status: connection_status,
-      has_quota: has_quota?,
-      total_remaining: total_quota_remaining
+      has_high_quota: has_high_quota?,
+      total_quotas: account_quotas.count
     }
   end
   
@@ -162,8 +173,8 @@ class AwsAccount < ApplicationRecord
     end
     
     # Remove encrypted secret key from logs
-    filtered_changes.delete('secret_key_encrypted')
-    filtered_changes.delete('secret_key_encrypted_iv')
+    filtered_changes.delete('secret_access_key_encrypted')
+    filtered_changes.delete('secret_access_key_encrypted_iv')
     
     filtered_changes
   end
@@ -171,19 +182,7 @@ class AwsAccount < ApplicationRecord
   private
 
   def set_default_values
-    self.status ||= :available
+    self.status ||= :active
     self.connection_status ||= :unknown
-  end
-
-  def create_initial_quotas
-    # Create default quotas for common Claude models
-    %w[Claude-3.5-Sonnet Claude-3-Haiku Claude-3-Opus].each do |model|
-      quotas.create!(
-        model_name: model,
-        quota_limit: 0,
-        quota_used: 0,
-        quota_remaining: 0
-      )
-    end
   end
 end

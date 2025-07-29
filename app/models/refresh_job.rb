@@ -5,18 +5,20 @@ class RefreshJob < ApplicationRecord
   belongs_to :aws_account, optional: true
 
   # Enums
-  enum job_type: {
-    manual: 0,
-    automatic: 1,
-    scheduled: 2
+  enum :job_type, {
+    manual: 'manual',
+    automatic: 'automatic', 
+    scheduled: 'scheduled',
+    bulk_refresh: 'bulk_refresh'
   }
 
-  enum status: {
+  enum :status, {
     pending: 0,
     running: 1,
     completed: 2,
     failed: 3,
-    cancelled: 4
+    cancelled: 4,
+    partially_completed: 5
   }
 
   # Validations
@@ -40,11 +42,7 @@ class RefreshJob < ApplicationRecord
   def self.create_batch_job(job_type: :manual)
     create!(
       job_type: job_type,
-      total_accounts: AwsAccount.active.count,
-      metadata: {
-        created_by: 'system',
-        batch_size: AwsAccount.active.count
-      }
+      total_accounts: AwsAccount.active.count
     )
   end
 
@@ -52,11 +50,7 @@ class RefreshJob < ApplicationRecord
     create!(
       aws_account: aws_account,
       job_type: job_type,
-      total_accounts: 1,
-      metadata: {
-        account_name: aws_account.name,
-        account_id: aws_account.account_id
-      }
+      total_accounts: 1
     )
   end
 
@@ -76,8 +70,7 @@ class RefreshJob < ApplicationRecord
   def start!
     update!(
       status: :running,
-      started_at: Time.current,
-      progress_percentage: 0
+      started_at: Time.current
     )
   end
 
@@ -86,8 +79,7 @@ class RefreshJob < ApplicationRecord
       status: :completed,
       completed_at: Time.current,
       successful_accounts: success_count,
-      failed_accounts: failure_count,
-      progress_percentage: 100
+      failed_accounts: failure_count
     )
   end
 
@@ -95,8 +87,7 @@ class RefreshJob < ApplicationRecord
     update!(
       status: :failed,
       completed_at: Time.current,
-      error_message: error_message,
-      progress_percentage: 0
+      error_message: error_message
     )
   end
 
@@ -113,8 +104,12 @@ class RefreshJob < ApplicationRecord
     return unless running?
     return if total_accounts.zero?
 
-    percentage = [(processed_count.to_f / total_accounts * 100).round(2), 100].min
-    update!(progress_percentage: percentage)
+    update!(processed_accounts: processed_count)
+  end
+  
+  def progress_percentage
+    return 0 if total_accounts.zero?
+    [(processed_accounts.to_f / total_accounts * 100).round(2), 100].min
   end
 
   def duration
@@ -188,10 +183,8 @@ class RefreshJob < ApplicationRecord
   private
 
   def set_defaults
-    self.progress_percentage = 0
     self.successful_accounts = 0
     self.failed_accounts = 0
-    self.metadata ||= {}
   end
 
   def update_completion_time

@@ -38,43 +38,70 @@ class AwsService
       }
     end
     
-    # Get quota information for Claude models
+    # Get quota information for Claude models using Service Quotas API
     def get_quota_info(access_key, secret_key, region = DEFAULT_REGION)
-      client = create_bedrock_client(access_key, secret_key, region)
-      
-      # List available Claude models
-      models_response = client.list_foundation_models
-      claude_models = extract_claude_models(models_response.model_summaries)
+      service_quotas_client = create_service_quotas_client(access_key, secret_key, region)
       
       quotas = []
       
-      claude_models.each do |model|
-        begin
-          # Get quota for each model (this is a mock implementation)
-          # In real AWS Bedrock, quota information might be retrieved differently
-          quota_info = get_model_quota(client, model[:model_id])
+      # First, discover the actual quota codes
+      quota_codes = find_bedrock_quota_codes(service_quotas_client)
+      
+      # Check quotas for each model and quota type
+      AwsQuotaService::CLAUDE_MODELS.each do |model_name, model_config|
+        # Get the quota types for this specific model
+        model_quota_types = AwsQuotaService.quota_types_for_model(model_name)
+        
+        model_quota_types.each do |quota_key|
+          quota_description = AwsQuotaService.quota_description(quota_key)
           
-          quotas << {
-            model_name: model[:model_name],
-            model_id: model[:model_id],
-            quota_limit: quota_info[:limit],
-            quota_used: quota_info[:used],
-            quota_remaining: quota_info[:limit] - quota_info[:used],
-            last_updated: Time.current
-          }
-        rescue => e
-          Rails.logger.error "Failed to get quota for #{model[:model_name]}: #{e.message}"
+          # Try to find the specific quota code
+          quota_code_key = AwsQuotaService.quota_key(model_name, quota_key)
+          quota_code = quota_codes[quota_code_key]
           
-          # Add default quota if API call fails
-          quotas << {
-            model_name: model[:model_name],
-            model_id: model[:model_id],
-            quota_limit: 0,
-            quota_used: 0,
-            quota_remaining: 0,
-            last_updated: Time.current,
-            error: e.message
-          }
+          begin
+            if quota_code
+              current_value, default_value, is_adjustable = get_quota_value(service_quotas_client, 'bedrock', quota_code)
+            else
+              current_value, default_value, is_adjustable = nil, nil, nil
+            end
+            
+            # Determine display values
+            current_display = current_value || 'N/A'
+            default_display = default_value || 'N/A'
+            
+            # Evaluate quota level using simplified logic (High if >= default, Low otherwise)
+            quota_level = AwsQuotaService.evaluate_quota_level(quota_key, current_value, default_value)
+            
+            quotas << {
+              model_name: model_name,
+              model_id: model_config[:model_id],
+              quota_type: quota_key,
+              quota_description: quota_description,
+              quota_limit: current_value || 0,  # Only store the actual quota limit
+              default_value: default_value || 0,
+              is_adjustable: is_adjustable || false,
+              quota_level: quota_level,
+              aws_quota_code: quota_code,
+              last_updated: Time.current
+            }
+          rescue => e
+            Rails.logger.error "Failed to get quota for #{model_name} #{quota_key}: #{e.message}"
+            
+            quotas << {
+              model_name: model_name,
+              model_id: model_config[:model_id],
+              quota_type: quota_key,
+              quota_description: quota_description,
+              quota_limit: 0,  # Error case, set to 0
+              default_value: 0,
+              is_adjustable: false,
+              quota_level: 'N/A',
+              aws_quota_code: quota_code,
+              last_updated: Time.current,
+              error: e.message
+            }
+          end
         end
       end
       
@@ -113,13 +140,16 @@ class AwsService
         Quota.transaction do
           result[:quotas].each do |quota_data|
             quota = aws_account.quotas.find_or_initialize_by(
-              model_name: quota_data[:model_name]
+              service_name: quota_data[:model_name],
+              quota_type: quota_data[:quota_type]
             )
             
             quota.update!(
-              quota_limit: quota_data[:quota_limit],
-              quota_used: quota_data[:quota_used],
-              quota_remaining: quota_data[:quota_remaining],
+              quota_limit: parse_quota_value(quota_data[:quota_limit]) || 0,
+              default_value: parse_quota_value(quota_data[:default_value]) || 0,
+              is_adjustable: quota_data[:is_adjustable],
+              quota_level: quota_data[:quota_level],
+              aws_quota_code: quota_data[:aws_quota_code],
               last_updated_at: Time.current,
               update_status: :success
             )
@@ -129,8 +159,8 @@ class AwsService
         # Update account connection status
         aws_account.update!(
           connection_status: :connected,
-          last_connected_at: Time.current,
-          connection_error: nil
+          last_connection_test_at: Time.current,
+          connection_error_message: nil
         )
         
         result
@@ -138,7 +168,7 @@ class AwsService
         # Update account with error status
         aws_account.update!(
           connection_status: :error,
-          connection_error: result[:error]
+          connection_error_message: result[:error]
         )
         
         # Mark all quotas as failed
@@ -221,16 +251,82 @@ class AwsService
     
     private
     
+    # Get mock quota information (temporary solution)
+    def get_mock_quota_info(region)
+      quotas = []
+      
+      # Generate mock data for each model and quota type
+      AwsQuotaService::CLAUDE_MODELS.each do |model_name, model_config|
+        model_quota_types = AwsQuotaService.quota_types_for_model(model_name)
+        
+        model_quota_types.each do |quota_key|
+          quota_description = AwsQuotaService.quota_description(quota_key)
+          
+          # Generate realistic mock values based on quota type
+          case quota_key
+          when 'requests_per_minute'
+            current_value = rand(1000..5000)
+            default_value = 1000
+          when 'tokens_per_minute'
+            current_value = rand(50000..200000)
+            default_value = 50000
+          when 'tokens_per_day'
+            current_value = rand(1000000..5000000)
+            default_value = 1000000
+          else
+            current_value = rand(1000..10000)
+            default_value = 1000
+          end
+          
+          # Evaluate quota level
+          quota_level = AwsQuotaService.evaluate_quota_level(quota_key, current_value)
+          
+          quotas << {
+            model_name: model_name,
+            model_id: model_config[:model_id],
+            quota_type: quota_key,
+            quota_description: quota_description,
+            quota_limit: current_value,
+            quota_used: rand(0..current_value/2), # Random usage up to 50%
+            quota_remaining: current_value - rand(0..current_value/2),
+            default_value: default_value,
+            is_adjustable: true,
+            quota_level: quota_level,
+            aws_quota_code: "mock-#{model_name}-#{quota_key}",
+            last_updated: Time.current
+          }
+        end
+      end
+      
+      {
+        success: true,
+        region: region,
+        quotas: quotas,
+        total_models: quotas.count
+      }
+    end
+    
     # Create AWS Bedrock client
     def create_bedrock_client(access_key, secret_key, region)
       Aws::Bedrock::Client.new(
         access_key_id: access_key,
         secret_access_key: secret_key,
         region: region,
-        retry_limit: 3,
-        retry_delay: 1
+        retry_limit: 3
       )
     end
+    
+    
+    # Create AWS Service Quotas client
+    def create_service_quotas_client(access_key, secret_key, region)
+      Rails.logger.info "Creating ServiceQuotas client for region: #{region}"
+      Aws::ServiceQuotas::Client.new(
+        access_key_id: access_key,
+        secret_access_key: secret_key,
+        region: region
+      )
+    end
+    
     
     # Extract Claude models from AWS response
     def extract_claude_models(model_summaries)
@@ -264,31 +360,105 @@ class AwsService
       model_part.titleize
     end
     
-    # Get quota for specific model (mock implementation)
-    def get_model_quota(client, model_id)
-      # This is a mock implementation since AWS Bedrock doesn't have 
-      # a direct quota API. In real implementation, this would use
-      # AWS Service Quotas or CloudWatch metrics
+    # Get quota value for a specific service and quota code
+    def get_quota_value(service_quotas_client, service_code, quota_code)
+      begin
+        # Try to get the applied quota value first
+        response = service_quotas_client.get_service_quota(
+          service_code: service_code,
+          quota_code: quota_code
+        )
+        
+        quota = response.quota
+        current_value = quota.value
+        is_adjustable = quota.adjustable
+        
+        # Get default value
+        default_response = service_quotas_client.get_aws_default_service_quota(
+          service_code: service_code,
+          quota_code: quota_code
+        )
+        default_value = default_response.quota.value
+        
+        [current_value, default_value, is_adjustable]
+        
+      rescue => e
+        if defined?(Aws::ServiceQuotas::Errors::NoSuchResourceException) && e.is_a?(Aws::ServiceQuotas::Errors::NoSuchResourceException)
+          Rails.logger.debug "Quota #{quota_code} not found"
+        else
+          Rails.logger.error "Error getting quota #{quota_code}: #{e.message}"
+        end
+        [nil, nil, nil]
+      rescue Aws::Errors::ServiceError => e
+        Rails.logger.error "Error getting quota #{quota_code}: #{e.message}"
+        [nil, nil, nil]
+      rescue => e
+        Rails.logger.error "Unexpected error getting quota #{quota_code}: #{e.message}"
+        [nil, nil, nil]
+      end
+    end
+    
+    # Find the actual quota codes for Bedrock Claude models
+    def find_bedrock_quota_codes(service_quotas_client)
+      Rails.logger.info "Discovering Bedrock quota codes..."
       
-      # Simulate different quota limits based on model
-      base_limit = case model_id
-                  when /claude-3-opus/
-                    100_000
-                  when /claude-3-sonnet/
-                    500_000
-                  when /claude-3-haiku/
-                    1_000_000
-                  else
-                    10_000
-                  end
+      begin
+        quota_mapping = {}
+        
+        # List all quotas for bedrock service
+        paginator = service_quotas_client.list_service_quotas(service_code: 'bedrock')
+        
+        paginator.each_page do |page|
+          page.quotas.each do |quota|
+            quota_name = quota.quota_name
+            quota_code = quota.quota_code
+            
+            # Match quotas based on specific model patterns
+            AwsQuotaService::CLAUDE_MODELS.each do |model_name, model_config|
+              quota_pattern = model_config[:quota_pattern]
+              
+              # Check for exact pattern match in quota name
+              if quota_name.include?(quota_pattern)
+                # Identify quota type (note case sensitivity)
+                if quota_name.include?('Cross-Region model inference requests per minute') || 
+                   quota_name.include?('Cross-region model inference requests per minute')
+                  key = AwsQuotaService.quota_key(model_name, 'requests_per_minute')
+                  quota_mapping[key] = quota_code
+                elsif quota_name.include?('Cross-Region model inference tokens per minute') ||
+                      quota_name.include?('Cross-region model inference tokens per minute')
+                  key = AwsQuotaService.quota_key(model_name, 'tokens_per_minute')
+                  quota_mapping[key] = quota_code
+                elsif quota_name.include?('Model invocation max tokens per day') && 
+                      quota_name.include?('doubled for cross-region calls')
+                  key = AwsQuotaService.quota_key(model_name, 'tokens_per_day')
+                  quota_mapping[key] = quota_code
+                end
+              end
+            end
+          end
+        end
+        
+        Rails.logger.debug "Found #{quota_mapping.size} quota mappings"
+        quota_mapping
+        
+      rescue => e
+        Rails.logger.error "Error discovering quota codes: #{e.message}"
+        {}
+      end
+    end
+    
+    # Parse quota value handling 'N/A' and 'Error' cases
+    def parse_quota_value(value)
+      return nil if value.nil? || value == 'N/A' || value == 'Error'
       
-      # Simulate random usage
-      used = rand(0..(base_limit * 0.8).to_i)
-      
-      {
-        limit: base_limit,
-        used: used
-      }
+      case value
+      when String
+        value.to_f
+      when Numeric
+        value.to_f
+      else
+        nil
+      end
     end
     
     # Get human-readable region name

@@ -8,6 +8,56 @@ Rails.application.routes.draw do
   # Health check for load balancers
   get "health" => "rails/health#show"
 
+  # Admin routes
+  namespace :admin do
+    root 'dashboard#index'
+    get 'dashboard', to: 'dashboard#index'
+    
+    resources :aws_accounts do
+      member do
+        patch :activate
+        patch :deactivate
+        post :refresh_quota
+      end
+      collection do
+        post :bulk_refresh
+        get :export
+      end
+    end
+    
+    resources :quotas do
+      member do
+        post :refresh
+      end
+      collection do
+        post :bulk_refresh
+        get :statistics
+        get :export
+      end
+    end
+    
+    # Account-specific quota routes
+    resources :aws_accounts do
+      member do
+        get 'quotas', to: 'quotas#account_quotas', as: :account_quotas
+        post 'quotas/refresh', to: 'quotas#refresh_account_quotas', as: :refresh_account_quotas
+      end
+    end
+    
+    resources :audit_logs, only: [:index, :show] do
+      collection do
+        get :export
+      end
+    end
+    
+    resources :settings, only: [:index, :update] do
+      collection do
+        post :test_aws_connection
+        post :clear_cache
+      end
+    end
+  end
+
   # API routes
   namespace :api do
     namespace :v1 do
@@ -34,5 +84,5 @@ Rails.application.routes.draw do
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
 
   # Defines the root path route ("/")
-  # root "posts#index"
+  root "admin/dashboard#index"
 end

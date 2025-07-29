@@ -2,17 +2,34 @@
 # of editing this file, please use the migrations feature of Active Record to
 # incrementally modify your database, and then regenerate this schema definition.
 #
-# Note that this schema.rb definition is the authoritative source for your
-# database schema. If you need to create the application database on another
-# system, you should be using db:schema:load, not running all the migrations
-# from scratch. The latter is a flawed and unsustainable approach (the more migrations
-# you'll amass, the slower it'll run and the greater likelihood for issues).
+# This file is the source Rails uses to define your schema when running `bin/rails
+# db:schema:load`. When creating a new database, `bin/rails db:schema:load` tends to
+# be faster and is potentially less error prone than running all of your
+# migrations from scratch. Old migrations may fail to apply correctly if those
+# migrations use external dependencies or application code.
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2025_07_25_052035) do
+ActiveRecord::Schema[8.0].define(version: 2025_07_26_161131) do
+  create_table "account_quotas", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.bigint "aws_account_id", null: false
+    t.bigint "quota_definition_id", null: false
+    t.decimal "current_quota", precision: 15, scale: 2, default: "0.0"
+    t.string "quota_level", default: "unknown"
+    t.boolean "is_adjustable", default: false
+    t.datetime "last_sync_at"
+    t.string "sync_status", default: "pending"
+    t.text "sync_error"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["aws_account_id", "quota_definition_id"], name: "idx_account_quota_unique", unique: true
+    t.index ["aws_account_id"], name: "index_account_quotas_on_aws_account_id"
+    t.index ["quota_definition_id"], name: "index_account_quotas_on_quota_definition_id"
+    t.index ["quota_level"], name: "index_account_quotas_on_quota_level"
+    t.index ["sync_status"], name: "index_account_quotas_on_sync_status"
+  end
 
-  create_table "admins", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|
+  create_table "admins", charset: "utf8mb3", force: :cascade do |t|
     t.string "username", limit: 50, null: false
     t.string "email", limit: 100, null: false
     t.string "password_digest", null: false
@@ -26,18 +43,20 @@ ActiveRecord::Schema.define(version: 2025_07_25_052035) do
     t.integer "role", default: 0, null: false
     t.integer "status", default: 0, null: false
     t.datetime "password_changed_at"
+    t.datetime "last_activity_at"
     t.index ["email"], name: "index_admins_on_email", unique: true
+    t.index ["last_activity_at"], name: "index_admins_on_last_activity_at"
     t.index ["role"], name: "index_admins_on_role"
     t.index ["status"], name: "index_admins_on_status"
     t.index ["username"], name: "index_admins_on_username", unique: true
   end
 
-  create_table "audit_logs", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|
+  create_table "audit_logs", charset: "utf8mb3", force: :cascade do |t|
     t.bigint "admin_id"
     t.string "action", limit: 50, null: false
     t.string "target_type", limit: 50
     t.bigint "target_id"
-    t.json "changes"
+    t.json "change_details"
     t.json "metadata"
     t.string "ip_address", limit: 45
     t.text "user_agent"
@@ -52,7 +71,7 @@ ActiveRecord::Schema.define(version: 2025_07_25_052035) do
     t.index ["target_type", "target_id"], name: "index_audit_logs_on_target_type_and_target_id"
   end
 
-  create_table "aws_accounts", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|
+  create_table "aws_accounts", charset: "utf8mb3", force: :cascade do |t|
     t.string "account_id", limit: 20, null: false
     t.string "access_key", limit: 100, null: false
     t.text "secret_key_encrypted", null: false
@@ -67,49 +86,32 @@ ActiveRecord::Schema.define(version: 2025_07_25_052035) do
     t.datetime "deleted_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "region", default: "us-east-1"
+    t.json "tags"
     t.index ["account_id"], name: "index_aws_accounts_on_account_id", unique: true
     t.index ["connection_status"], name: "index_aws_accounts_on_connection_status"
     t.index ["deleted_at"], name: "index_aws_accounts_on_deleted_at"
+    t.index ["region"], name: "index_aws_accounts_on_region"
     t.index ["status"], name: "index_aws_accounts_on_status"
   end
 
-  create_table "quota_histories", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|
-    t.bigint "aws_account_id", null: false
-    t.bigint "quota_id", null: false
-    t.string "model_name", limit: 100, null: false
-    t.bigint "quota_limit", default: 0, null: false
-    t.bigint "quota_used", default: 0, null: false
-    t.bigint "quota_remaining", default: 0, null: false
-    t.json "raw_data"
-    t.datetime "recorded_at", null: false
+  create_table "quota_definitions", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.string "quota_code", null: false
+    t.string "claude_model_name", null: false
+    t.string "model_version"
+    t.string "quota_type", null: false
+    t.text "quota_name", null: false
+    t.string "call_type"
+    t.decimal "default_value", precision: 15, scale: 2
+    t.boolean "is_active", default: true
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["aws_account_id", "model_name", "recorded_at"], name: "idx_quota_hist_account_model_time"
-    t.index ["aws_account_id"], name: "index_quota_histories_on_aws_account_id"
-    t.index ["quota_id"], name: "index_quota_histories_on_quota_id"
-    t.index ["recorded_at"], name: "index_quota_histories_on_recorded_at"
+    t.index ["claude_model_name", "quota_type"], name: "index_quota_definitions_on_claude_model_name_and_quota_type"
+    t.index ["is_active"], name: "index_quota_definitions_on_is_active"
+    t.index ["quota_code"], name: "index_quota_definitions_on_quota_code", unique: true
   end
 
-  create_table "quotas", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|
-    t.bigint "aws_account_id", null: false
-    t.string "model_name", limit: 100, null: false
-    t.bigint "quota_limit", default: 0, null: false
-    t.bigint "quota_used", default: 0, null: false
-    t.bigint "quota_remaining", default: 0, null: false
-    t.datetime "last_updated_at"
-    t.integer "update_status", default: 2, null: false
-    t.text "update_error_message"
-    t.json "raw_data"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.index ["aws_account_id", "model_name"], name: "index_quotas_on_aws_account_id_and_model_name", unique: true
-    t.index ["aws_account_id"], name: "index_quotas_on_aws_account_id"
-    t.index ["last_updated_at"], name: "index_quotas_on_last_updated_at"
-    t.index ["model_name"], name: "index_quotas_on_model_name"
-    t.index ["update_status"], name: "index_quotas_on_update_status"
-  end
-
-  create_table "refresh_jobs", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|
+  create_table "refresh_jobs", charset: "utf8mb3", force: :cascade do |t|
     t.bigint "aws_account_id"
     t.string "job_type", limit: 50, null: false
     t.integer "status", default: 0, null: false
@@ -131,7 +133,7 @@ ActiveRecord::Schema.define(version: 2025_07_25_052035) do
     t.index ["status"], name: "index_refresh_jobs_on_status"
   end
 
-  create_table "system_configs", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|
+  create_table "system_configs", charset: "utf8mb3", force: :cascade do |t|
     t.string "key", limit: 100, null: false
     t.text "value"
     t.string "data_type", default: "string", null: false
@@ -144,10 +146,9 @@ ActiveRecord::Schema.define(version: 2025_07_25_052035) do
     t.index ["key"], name: "index_system_configs_on_key", unique: true
   end
 
+  add_foreign_key "account_quotas", "aws_accounts"
+  add_foreign_key "account_quotas", "quota_definitions"
   add_foreign_key "audit_logs", "admins"
-  add_foreign_key "quota_histories", "aws_accounts"
-  add_foreign_key "quota_histories", "quotas"
-  add_foreign_key "quotas", "aws_accounts"
   add_foreign_key "refresh_jobs", "admins"
   add_foreign_key "refresh_jobs", "aws_accounts"
 end

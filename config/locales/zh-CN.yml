@@ -1,0 +1,70 @@
+zh-CN:
+  hello: "您好"
+  
+  # 时间距离翻译
+  datetime:
+    distance_in_words:
+      less_than_x_minutes:
+        one: "不到1分钟"
+        other: "不到%{count}分钟"
+      x_minutes:
+        one: "1分钟"
+        other: "%{count}分钟"
+      about_x_hours:
+        one: "大约1小时"
+        other: "大约%{count}小时"
+      x_days:
+        one: "1天"
+        other: "%{count}天"
+      about_x_months:
+        one: "大约1个月"
+        other: "大约%{count}个月"
+      x_months:
+        one: "1个月"
+        other: "%{count}个月"
+      about_x_years:
+        one: "大约1年"
+        other: "大约%{count}年"
+      over_x_years:
+        one: "超过1年"
+        other: "超过%{count}年"
+      almost_x_years:
+        one: "接近1年"
+        other: "接近%{count}年"
+      half_a_minute: "半分钟"
+  
+  # ActiveRecord 错误消息
+  activerecord:
+    errors:
+      messages:
+        record_invalid: "验证失败: %{errors}"
+        blank: "不能为空"
+        present: "必须为空"
+        confirmation: "与确认值不匹配"
+        accepted: "必须是可被接受的"
+        empty: "不能留空"
+        inclusion: "不包含于列表中"
+        exclusion: "是保留关键词"
+        invalid: "是无效的"
+        length:
+          is: "长度必须为 %{count} 个字符"
+          minimum: "长度不能少于 %{count} 个字符"
+          maximum: "长度不能超过 %{count} 个字符"
+          within: "长度必须在 %{minimum} 和 %{maximum} 之间"
+          wrong_length: "长度必须为 %{count} 个字符"
+        numericality:
+          not_a_number: "不是数字"
+          greater_than: "必须大于 %{count}"
+          greater_than_or_equal_to: "必须大于或等于 %{count}"
+          equal_to: "必须等于 %{count}"
+          less_than: "必须小于 %{count}"
+          less_than_or_equal_to: "必须小于或等于 %{count}"
+          other_than: "必须不等于 %{count}"
+          odd: "必须为奇数"
+          even: "必须为偶数"
+        taken: "已经被使用"
+        too_long: "过长（最长为 %{count} 个字符）"
+        too_short: "过短（最短为 %{count} 个字符）"
+        wrong_length: "长度必须为 %{count} 个字符"
+        uniqueness: "已经存在"
+        format: "格式无效"

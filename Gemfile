@@ -29,6 +29,7 @@ gem 'jwt'
 # AWS Integration
 gem 'aws-sdk-core'
 gem 'aws-sdk-bedrock'
+gem 'aws-sdk-servicequotas'
 
 # Encryption
 gem 'attr_encrypted'

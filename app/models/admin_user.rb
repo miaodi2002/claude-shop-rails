@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
-class Admin < ApplicationRecord
+class AdminUser < ApplicationRecord
+  self.table_name = 'admins'
   # Include concerns
   include Auditable
   
@@ -8,13 +9,13 @@ class Admin < ApplicationRecord
   has_secure_password
 
   # Enums
-  enum role: {
+  enum :role, {
     operator: 0,
     manager: 1,
     super_admin: 2
   }
 
-  enum status: {
+  enum :status, {
     active: 0,
     inactive: 1,
     suspended: 2

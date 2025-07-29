@@ -1,0 +1,14 @@
+zh-CN:
+  refresh_job:
+    status:
+      pending: "等待中"
+      running: "执行中"
+      completed: "已完成"
+      failed: "失败"
+      cancelled: "已取消"
+      partially_completed: "部分完成"
+    job_type:
+      manual: "手动"
+      automatic: "自动"
+      scheduled: "定时"
+      bulk_refresh: "批量"
