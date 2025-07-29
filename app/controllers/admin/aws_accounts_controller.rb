@@ -19,12 +19,20 @@ module Admin
     end
     
     def show
-      @account_quotas = @aws_account.account_quotas.includes(:quota_definition).order('quota_definitions.service_name')
+      @account_quotas = @aws_account.account_quotas.includes(:quota_definition).order('quota_definitions.quota_name')
       @audit_logs = @aws_account.audit_logs.recent.limit(5)
       
       # 获取该账号最近的刷新任务
       @recent_refresh_jobs = RefreshJob.for_account(@aws_account).recent.limit(5)
       @current_refresh_job = RefreshJob.for_account(@aws_account).in_progress.first
+      
+      # 临时解决方案：使用最近同步的配额作为历史记录
+      # TODO: 实现专门的配额历史追踪表
+      @recent_quota_histories = @aws_account.account_quotas
+                                          .includes(:quota_definition)
+                                          .where.not(last_sync_at: nil)
+                                          .order(last_sync_at: :desc)
+                                          .limit(10)
     end
     
     def new

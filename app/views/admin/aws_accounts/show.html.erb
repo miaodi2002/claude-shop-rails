@@ -282,44 +282,44 @@
 </div>
 
 <!-- 配额历史 -->
-<% if @recent_quota_histories.any? %>
+<% if @recent_quota_histories&.any? %>
   <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
     <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
-      <h3 class="text-lg leading-6 font-medium text-gray-900">最近配额变更</h3>
-      <p class="mt-1 max-w-2xl text-sm text-gray-500">最近10次配额更新记录</p>
+      <h3 class="text-lg leading-6 font-medium text-gray-900">最近配额同步</h3>
+      <p class="mt-1 max-w-2xl text-sm text-gray-500">最近10次配额同步记录</p>
     </div>
     
     <div class="overflow-x-auto">
       <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
           <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">服务</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">配额限制</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">配额名称</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">当前配额</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">配额等级</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">更新时间</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">同步时间</th>
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
-          <% @recent_quota_histories.each do |history| %>
+          <% @recent_quota_histories.each do |quota| %>
             <tr>
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                <%= history.service_code %>
+                <%= quota.quota_definition.quota_name %>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                <%= number_with_delimiter(history.quota_limit) %>
+                <%= number_with_delimiter(quota.current_quota) %>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
-                  <%= case history.quota&.quota_level
+                  <%= case quota.quota_level
                       when 'high' then 'bg-green-100 text-green-800'
                       when 'low' then 'bg-red-100 text-red-800'
                       else 'bg-gray-100 text-gray-800'
                       end %>">
-                  <%= history.quota&.quota_level&.upcase || 'N/A' %>
+                  <%= quota.display_quota_level %>
                 </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                <%= history.created_at.strftime('%m月%d日 %H:%M') %>
+                <%= quota.last_sync_at&.strftime('%m月%d日 %H:%M') || 'N/A' %>
               </td>
             </tr>
           <% end %>
