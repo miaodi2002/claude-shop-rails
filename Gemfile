@@ -64,6 +64,8 @@ group :development, :test do
   gem 'factory_bot_rails'
   gem 'faker'
   gem 'rubocop-rails', require: false
+  gem 'rubocop-rails-omakase', require: false
+  gem 'brakeman', require: false
 end
 
 group :development do
