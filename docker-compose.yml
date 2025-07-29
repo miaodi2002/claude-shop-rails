@@ -40,7 +40,9 @@ services:
 
   # Rails 应用
   web:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
     container_name: claude_shop_web
     environment:
       - DATABASE_URL=mysql2://claude_shop:claude_shop_pass_2024@mysql:3306/claude_shop_development
@@ -50,8 +52,7 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - .:/app
-      - bundle_cache:/usr/local/bundle
+      - .:/app:cached
     depends_on:
       mysql:
         condition: service_healthy
@@ -60,6 +61,7 @@ services:
     stdin_open: true
     tty: true
     working_dir: /app
+    user: "1000:1000"
     command: >
       bash -c "
         cd /app &&
@@ -72,23 +74,24 @@ services:
 
   # Sidekiq 后台任务
   sidekiq:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
     container_name: claude_shop_sidekiq
     environment:
       - DATABASE_URL=mysql2://claude_shop:claude_shop_pass_2024@mysql:3306/claude_shop_development
       - REDIS_URL=redis://redis:6379/0
       - RAILS_ENV=development
     volumes:
-      - .:/app
-      - bundle_cache:/usr/local/bundle
+      - .:/app:cached
     depends_on:
       mysql:
         condition: service_healthy
       redis:
         condition: service_healthy
+    user: "1000:1000"
     command: bundle exec sidekiq
 
 volumes:
   mysql_data:
   redis_data:
-  bundle_cache:
