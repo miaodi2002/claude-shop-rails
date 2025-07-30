@@ -1,0 +1,136 @@
+<% content_for :page_title, "新增用户" %>
+
+<% content_for :page_actions do %>
+  <%= link_to '返回列表', admin_admin_users_path, 
+      class: 'inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500' %>
+<% end %>
+
+<div class="max-w-3xl mx-auto">
+  <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+    <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+      <h3 class="text-lg leading-6 font-medium text-gray-900">新增管理员用户</h3>
+      <p class="mt-1 max-w-2xl text-sm text-gray-500">填写用户基本信息，创建新的管理员账号</p>
+    </div>
+    
+    <%= form_with model: [:admin, @admin_user], local: true, class: "space-y-6" do |form| %>
+      <div class="px-4 py-5 sm:p-6">
+        <!-- 错误信息 -->
+        <% if @admin_user.errors.any? %>
+          <div class="rounded-md bg-red-50 p-4 mb-6">
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                </svg>
+              </div>
+              <div class="ml-3">
+                <h3 class="text-sm font-medium text-red-800">创建失败</h3>
+                <div class="mt-2 text-sm text-red-700">
+                  <ul class="list-disc list-inside space-y-1">
+                    <% @admin_user.errors.full_messages.each do |message| %>
+                      <li><%= message %></li>
+                    <% end %>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          <!-- 用户名 -->
+          <div>
+            <%= form.label :username, "用户名", class: "block text-sm font-medium text-gray-700" %>
+            <%= form.text_field :username, 
+                required: true,
+                class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+            <p class="mt-1 text-xs text-gray-500">3-50个字符，只能包含字母、数字和下划线</p>
+          </div>
+
+          <!-- 邮箱 -->
+          <div>
+            <%= form.label :email, "邮箱地址", class: "block text-sm font-medium text-gray-700" %>
+            <%= form.email_field :email, 
+                required: true,
+                class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+            <p class="mt-1 text-xs text-gray-500">用于登录和接收通知</p>
+          </div>
+
+          <!-- 全名 -->
+          <div>
+            <%= form.label :full_name, "姓名", class: "block text-sm font-medium text-gray-700" %>
+            <%= form.text_field :full_name, 
+                class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+            <p class="mt-1 text-xs text-gray-500">显示名称，可选填写</p>
+          </div>
+
+          <!-- 角色 -->
+          <div>
+            <%= form.label :role, "用户角色", class: "block text-sm font-medium text-gray-700" %>
+            <%= form.select :role, 
+                options_for_select([
+                  ['操作员', 'operator'],
+                  ['管理员', 'manager'],
+                  ['超级管理员', 'super_admin']
+                ], @admin_user.role),
+                {},
+                { class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" } %>
+          </div>
+
+          <!-- 密码 -->
+          <div>
+            <%= form.label :password, "密码", class: "block text-sm font-medium text-gray-700" %>
+            <%= form.password_field :password, 
+                required: true,
+                class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+            <p class="mt-1 text-xs text-gray-500">至少8位，包含大小写字母、数字和特殊字符</p>
+          </div>
+
+          <!-- 确认密码 -->
+          <div>
+            <%= form.label :password_confirmation, "确认密码", class: "block text-sm font-medium text-gray-700" %>
+            <%= form.password_field :password_confirmation, 
+                required: true,
+                class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %>
+          </div>
+        </div>
+
+        <!-- 状态 -->
+        <div class="mt-6">
+          <%= form.label :status, "账号状态", class: "block text-sm font-medium text-gray-700" %>
+          <div class="mt-2 space-y-2">
+            <% [['active', '活跃', '用户可以正常登录和使用系统'], 
+                ['inactive', '停用', '用户无法登录，但数据保留']] .each do |value, label, description| %>
+              <div class="flex items-start">
+                <div class="flex items-center h-5">
+                  <%= form.radio_button :status, value, 
+                      checked: (@admin_user.status == value || (value == 'active' && @admin_user.status.blank?)),
+                      class: "focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300" %>
+                </div>
+                <div class="ml-3 text-sm">
+                  <%= form.label "status_#{value}", label, class: "font-medium text-gray-700" %>
+                  <p class="text-gray-500"><%= description %></p>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <!-- 提交按钮 -->
+      <div class="px-4 py-3 bg-gray-50 text-right sm:px-6 flex justify-between items-center">
+        <p class="text-sm text-gray-500">
+          用户创建后将收到包含登录信息的邮件通知
+        </p>
+        
+        <div class="space-x-3">
+          <%= link_to '取消', admin_admin_users_path, 
+              class: 'bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500' %>
+          
+          <%= form.submit "创建用户", 
+              class: 'ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500' %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>

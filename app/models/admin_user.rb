@@ -22,7 +22,7 @@ class AdminUser < ApplicationRecord
   }
 
   # Associations
-  has_many :audit_logs, dependent: :nullify
+  has_many :audit_logs, foreign_key: 'admin_id', dependent: :nullify
 
   # Validations
   validates :username, presence: true, uniqueness: { case_sensitive: false }, 
