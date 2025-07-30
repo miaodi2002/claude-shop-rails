@@ -5,4 +5,7 @@
 # Load quota definitions
 require_relative 'seeds/quota_definitions'
 
+# Load admin users
+require_relative 'seeds/admin_users'
+
 puts "\n✅ All seeds loaded successfully!"

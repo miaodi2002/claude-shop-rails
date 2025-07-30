@@ -11,21 +11,29 @@ module Admin
     private
     
     def authenticate_admin!
-      # 临时跳过认证 - 仅用于开发测试
-      # TODO: 集成JWT认证
-      true
+      unless current_admin
+        redirect_to admin_login_path, alert: '请先登录'
+      end
     end
     
     def require_admin_role!
-      # 临时跳过权限检查 - 仅用于开发测试
-      # TODO: 实现权限控制
-      true
+      unless current_admin&.active?
+        redirect_to admin_login_path, alert: '账号已被停用'
+      end
     end
     
     def current_admin
-      # 临时返回实际管理员记录 - 仅用于开发测试
-      # TODO: 集成JWT认证后修改为从token获取用户
-      @current_admin ||= AdminUser.find_by(id: 1) || AdminUser.first
+      return nil unless session[:admin_id]
+      
+      @current_admin ||= AdminUser.active.find_by(id: session[:admin_id])
+      
+      # 检查会话是否过期 (24小时)
+      if @current_admin && session_expired?
+        session.clear
+        @current_admin = nil
+      end
+      
+      @current_admin
     end
     helper_method :current_admin
     
@@ -34,15 +42,26 @@ module Admin
         { name: '仪表板', path: admin_dashboard_path, icon: 'dashboard' },
         { name: 'AWS账号', path: admin_aws_accounts_path, icon: 'cloud' },
         { name: '配额管理', path: admin_account_quotas_path, icon: 'chart' },
-        { name: '审计日志', path: admin_audit_logs_path, icon: 'history' },
-        { name: '系统设置', path: admin_dashboard_path, icon: 'settings' }
+        { name: '审计日志', path: admin_audit_logs_path, icon: 'history' }
       ]
+      
+      # 只有超级管理员可以看到用户管理
+      if current_admin&.super_admin?
+        @admin_nav_items << { name: '用户管理', path: admin_admin_users_path, icon: 'users' }
+      end
       
       @admin_user_menu = [
         { name: '个人资料', path: admin_dashboard_path, icon: 'person' },
         { name: '修改密码', path: admin_dashboard_path, icon: 'lock' },
-        { name: '退出登录', path: admin_dashboard_path, icon: 'logout', method: :delete }
+        { name: '退出登录', path: admin_logout_path, icon: 'logout', method: :delete }
       ]
+    end
+    
+    def session_expired?
+      return true unless session[:admin_logged_in_at]
+      
+      logged_in_time = Time.at(session[:admin_logged_in_at])
+      logged_in_time < 24.hours.ago
     end
   end
 end

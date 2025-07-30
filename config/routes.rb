@@ -13,6 +13,11 @@ Rails.application.routes.draw do
     root 'dashboard#index'
     get 'dashboard', to: 'dashboard#index'
     
+    # Authentication routes
+    get 'login', to: 'sessions#new'
+    post 'login', to: 'sessions#create'
+    delete 'logout', to: 'sessions#destroy'
+    
     resources :aws_accounts do
       member do
         patch :activate
@@ -48,6 +53,14 @@ Rails.application.routes.draw do
       collection do
         post :test_aws_connection
         post :clear_cache
+      end
+    end
+    
+    resources :admin_users, only: [:index, :show, :new, :create, :edit, :update, :destroy] do
+      member do
+        patch :activate
+        patch :deactivate
+        patch :unlock
       end
     end
   end

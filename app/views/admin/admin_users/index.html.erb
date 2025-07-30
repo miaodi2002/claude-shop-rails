@@ -1,0 +1,231 @@
+<% content_for :page_title, "用户管理" %>
+
+<% content_for :page_actions do %>
+  <%= link_to '新增用户', new_admin_admin_user_path, 
+      class: 'inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500' %>
+<% end %>
+
+<!-- 统计信息 -->
+<div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5 mb-6">
+  <div class="bg-white overflow-hidden shadow rounded-lg">
+    <div class="p-5">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <div class="w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center">
+            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+        </div>
+        <div class="ml-5 w-0 flex-1">
+          <dl>
+            <dt class="text-sm font-medium text-gray-500 truncate">总用户数</dt>
+            <dd class="text-lg font-medium text-gray-900"><%= @stats[:total] %></dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white overflow-hidden shadow rounded-lg">
+    <div class="p-5">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+            </svg>
+          </div>
+        </div>
+        <div class="ml-5 w-0 flex-1">
+          <dl>
+            <dt class="text-sm font-medium text-gray-500 truncate">活跃用户</dt>
+            <dd class="text-lg font-medium text-gray-900"><%= @stats[:active] %></dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white overflow-hidden shadow rounded-lg">
+    <div class="p-5">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <div class="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center">
+            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+            </svg>
+          </div>
+        </div>
+        <div class="ml-5 w-0 flex-1">
+          <dl>
+            <dt class="text-sm font-medium text-gray-500 truncate">停用用户</dt>
+            <dd class="text-lg font-medium text-gray-900"><%= @stats[:inactive] %></dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white overflow-hidden shadow rounded-lg">
+    <div class="p-5">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <div class="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
+            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clip-rule="evenodd"/>
+            </svg>
+          </div>
+        </div>
+        <div class="ml-5 w-0 flex-1">
+          <dl>
+            <dt class="text-sm font-medium text-gray-500 truncate">被锁定</dt>
+            <dd class="text-lg font-medium text-gray-900"><%= @stats[:locked] %></dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white overflow-hidden shadow rounded-lg">
+    <div class="p-5">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <div class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v2H2v-4l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z" clip-rule="evenodd"/>
+            </svg>
+          </div>
+        </div>
+        <div class="ml-5 w-0 flex-1">
+          <dl>
+            <dt class="text-sm font-medium text-gray-500 truncate">暂停用户</dt>
+            <dd class="text-lg font-medium text-gray-900"><%= @stats[:suspended] %></dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 用户列表 -->
+<div class="bg-white shadow overflow-hidden sm:rounded-md">
+  <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+    <h3 class="text-lg leading-6 font-medium text-gray-900">管理员用户</h3>
+    <p class="mt-1 max-w-2xl text-sm text-gray-500">系统中的所有管理员用户</p>
+  </div>
+  
+  <% if @admin_users.any? %>
+    <ul class="divide-y divide-gray-200">
+      <% @admin_users.each do |user| %>
+        <li>
+          <div class="px-4 py-4 flex items-center justify-between space-x-3">
+            <div class="flex items-center space-x-3">
+              <!-- 用户头像 -->
+              <div class="flex-shrink-0 h-10 w-10">
+                <div class="h-10 w-10 rounded-full bg-indigo-500 flex items-center justify-center">
+                  <span class="text-sm font-medium text-white">
+                    <%= user.display_name[0].upcase %>
+                  </span>
+                </div>
+              </div>
+              
+              <!-- 用户信息 -->
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center space-x-2">
+                  <p class="text-sm font-medium text-gray-900 truncate">
+                    <%= user.display_name %>
+                  </p>
+                  
+                  <!-- 角色标签 -->
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                    <%= case user.role
+                        when 'super_admin' then 'bg-purple-100 text-purple-800'
+                        when 'manager' then 'bg-blue-100 text-blue-800'
+                        else 'bg-gray-100 text-gray-800'
+                        end %>">
+                    <%= case user.role
+                        when 'super_admin' then '超级管理员' 
+                        when 'manager' then '管理员'
+                        else '操作员'
+                        end %>
+                  </span>
+                  
+                  <!-- 状态标签 -->
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                    <%= case user.status
+                        when 'active' then 'bg-green-100 text-green-800'
+                        when 'inactive' then 'bg-yellow-100 text-yellow-800'
+                        else 'bg-red-100 text-red-800'
+                        end %>">
+                    <%= case user.status
+                        when 'active' then '活跃'
+                        when 'inactive' then '停用'
+                        else '暂停'
+                        end %>
+                  </span>
+                  
+                  <!-- 锁定状态 -->
+                  <% if user.locked? %>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                      🔒 已锁定
+                    </span>
+                  <% end %>
+                </div>
+                
+                <div class="flex items-center space-x-2 mt-1">
+                  <p class="text-sm text-gray-500"><%= user.email %></p>
+                  <span class="text-gray-300">•</span>
+                  <p class="text-sm text-gray-500">
+                    最后登录: <%= user.last_login_at ? time_ago_in_words(user.last_login_at) + '前' : '从未登录' %>
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 操作按钮 -->
+            <div class="flex-shrink-0 flex items-center space-x-2">
+              <%= link_to '查看', admin_admin_user_path(user), 
+                  class: 'text-indigo-600 hover:text-indigo-900 text-sm' %>
+              
+              <% unless user == current_admin %>
+                <%= link_to '编辑', edit_admin_admin_user_path(user), 
+                    class: 'text-indigo-600 hover:text-indigo-900 text-sm' %>
+                
+                <% if user.active? %>
+                  <%= link_to '停用', deactivate_admin_admin_user_path(user), 
+                      method: :patch,
+                      data: { confirm: '确定要停用此用户吗？' },
+                      class: 'text-yellow-600 hover:text-yellow-900 text-sm' %>
+                <% elsif user.inactive? %>
+                  <%= link_to '激活', activate_admin_admin_user_path(user), 
+                      method: :patch,
+                      class: 'text-green-600 hover:text-green-900 text-sm' %>
+                <% end %>
+                
+                <% if user.locked? %>
+                  <%= link_to '解锁', unlock_admin_admin_user_path(user), 
+                      method: :patch,
+                      class: 'text-blue-600 hover:text-blue-900 text-sm' %>
+                <% end %>
+                
+                <%= link_to '删除', admin_admin_user_path(user), 
+                    method: :delete,
+                    data: { confirm: '确定要删除此用户吗？此操作不可撤销。' },
+                    class: 'text-red-600 hover:text-red-900 text-sm' %>
+              <% end %>
+            </div>
+          </div>
+        </li>
+      <% end %>
+    </ul>
+  <% else %>
+    <div class="text-center py-12">
+      <svg class="mx-auto h-16 w-16 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+      </svg>
+      <h3 class="mt-4 text-lg font-medium text-gray-900">暂无用户</h3>
+      <p class="mt-2 text-sm text-gray-500">开始创建第一个管理员用户</p>
+    </div>
+  <% end %>
+</div>
