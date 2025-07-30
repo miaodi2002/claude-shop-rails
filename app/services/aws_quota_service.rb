@@ -2,6 +2,30 @@
 
 class AwsQuotaService
   class << self
+    # Claude 模型配置
+    CLAUDE_MODELS = {
+      'Claude 3.5 Sonnet V1' => {
+        quota_pattern: 'Claude 3.5 Sonnet',
+        model_id: 'anthropic.claude-3-5-sonnet',
+        version: 'V1'
+      },
+      'Claude 3.5 Sonnet V2' => {
+        quota_pattern: 'Claude 3.5 Sonnet V2',
+        model_id: 'anthropic.claude-3-5-sonnet-v2',
+        version: 'V2'
+      },
+      'Claude 3.7 Sonnet V1' => {
+        quota_pattern: 'Claude 3.7 Sonnet V1',
+        model_id: 'anthropic.claude-3-7-sonnet',
+        version: 'V1'
+      },
+      'Claude 4 Sonnet V1' => {
+        quota_pattern: 'Claude Sonnet 4 V1',
+        model_id: 'anthropic.claude-4-sonnet',
+        version: 'V1'
+      }
+    }.freeze
+
     # 预定义的配额定义数据
     QUOTA_DEFINITIONS = [
       # Claude 3.5 Sonnet V1
@@ -12,7 +36,7 @@ class AwsQuotaService
         quota_type: 'requests_per_minute', 
         quota_name: 'On-demand model inference requests per minute for Anthropic Claude 3.5 Sonnet', 
         call_type: 'On-demand',
-        default_value: 1000
+        default_value: 50 
       },
       { 
         quota_code: 'L-A50569E5', 
@@ -21,7 +45,7 @@ class AwsQuotaService
         quota_type: 'tokens_per_minute', 
         quota_name: 'On-demand model inference tokens per minute for Anthropic Claude 3.5 Sonnet', 
         call_type: 'On-demand',
-        default_value: 50000
+        default_value: 400000
       },
       
       # Claude 3.5 Sonnet V2
@@ -32,7 +56,7 @@ class AwsQuotaService
         quota_type: 'requests_per_minute', 
         quota_name: 'On-demand model inference requests per minute for Anthropic Claude 3.5 Sonnet V2', 
         call_type: 'On-demand',
-        default_value: 1000
+        default_value: 50
       },
       { 
         quota_code: 'L-AD41C330', 
@@ -41,7 +65,7 @@ class AwsQuotaService
         quota_type: 'tokens_per_minute', 
         quota_name: 'On-demand model inference tokens per minute for Anthropic Claude 3.5 Sonnet V2', 
         call_type: 'On-demand',
-        default_value: 50000
+        default_value: 400000
       },
       
       # Claude 3.7 Sonnet V1
@@ -52,7 +76,7 @@ class AwsQuotaService
         quota_type: 'requests_per_minute', 
         quota_name: 'Cross-region model inference requests per minute for Anthropic Claude 3.7 Sonnet V1', 
         call_type: 'Cross-region',
-        default_value: 2000
+        default_value: 250
       },
       { 
         quota_code: 'L-6E888CC2', 
@@ -61,7 +85,7 @@ class AwsQuotaService
         quota_type: 'tokens_per_minute', 
         quota_name: 'Cross-region model inference tokens per minute for Anthropic Claude 3.7 Sonnet V1', 
         call_type: 'Cross-region',
-        default_value: 100000
+        default_value: 1000000
       },
       { 
         quota_code: 'L-9EB71894', 
@@ -70,7 +94,7 @@ class AwsQuotaService
         quota_type: 'tokens_per_day', 
         quota_name: 'Model invocation max tokens per day for Anthropic Claude 3.7 Sonnet V1 (doubled for cross-region calls)', 
         call_type: 'Cross-region',
-        default_value: 5000000
+        default_value: 720000000
       },
       
       # Claude 4 Sonnet V1
@@ -81,7 +105,7 @@ class AwsQuotaService
         quota_type: 'requests_per_minute', 
         quota_name: 'Cross-region model inference requests per minute for Anthropic Claude Sonnet 4 V1', 
         call_type: 'Cross-region',
-        default_value: 2000
+        default_value: 200
       },
       { 
         quota_code: 'L-59759B4A', 
@@ -90,7 +114,7 @@ class AwsQuotaService
         quota_type: 'tokens_per_minute', 
         quota_name: 'Cross-region model inference tokens per minute for Anthropic Claude Sonnet 4 V1', 
         call_type: 'Cross-region',
-        default_value: 100000
+        default_value: 200000
       },
       { 
         quota_code: 'L-22F701C5', 
@@ -99,7 +123,7 @@ class AwsQuotaService
         quota_type: 'tokens_per_day', 
         quota_name: 'Model invocation max tokens per day for Anthropic Claude Sonnet 4 V1 (doubled for cross-region calls)', 
         call_type: 'Cross-region',
-        default_value: 5000000
+        default_value: 144000000
       }
     ].freeze
     
@@ -215,6 +239,53 @@ class AwsQuotaService
         aws_account.account_quotas.find_or_create_by(quota_definition: definition) do |aq|
           Rails.logger.info "Creating account quota for: #{definition.display_name}"
         end
+      end
+    end
+
+    # 获取模型的配额类型
+    def quota_types_for_model(model_name)
+      # 根据模型名称返回对应的配额类型
+      case model_name
+      when /Claude 3.5 Sonnet/, /Claude 3.7 Sonnet/, /Claude 4 Sonnet/
+        ['requests_per_minute', 'tokens_per_minute', 'tokens_per_day'].select do |type|
+          # 检查这个模型是否有这种类型的配额定义
+          QUOTA_DEFINITIONS.any? { |quota_def| quota_def[:claude_model_name].include?(model_name.split(' V')[0]) && quota_def[:quota_type] == type }
+        end
+      else
+        []
+      end
+    end
+
+    # 获取配额描述
+    def quota_description(quota_key)
+      case quota_key
+      when 'requests_per_minute'
+        'Requests per minute'
+      when 'tokens_per_minute'
+        'Tokens per minute'
+      when 'tokens_per_day'
+        'Tokens per day'
+      else
+        quota_key.humanize
+      end
+    end
+
+    # 生成配额键
+    def quota_key(model_name, quota_type)
+      "#{model_name}-#{quota_type}"
+    end
+
+    # 评估配额等级
+    def evaluate_quota_level(quota_type, current_value, default_value = nil)
+      return 'unknown' if current_value.nil? || default_value.nil?
+      
+      # 统一的三级判断逻辑：基于default_value进行比较
+      if current_value < default_value
+        'low'
+      elsif current_value == default_value
+        'medium'
+      else
+        'high'
       end
     end
   end

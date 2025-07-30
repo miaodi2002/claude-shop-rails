@@ -32,6 +32,9 @@ class AwsAccount < ApplicationRecord
   has_many :refresh_jobs, dependent: :nullify
   has_many :audit_logs, as: :target, dependent: :destroy
 
+  # Alias for backward compatibility with old quota system
+  alias_method :quotas, :account_quotas
+
   # Virtual attributes
   def tags
     read_attribute(:tags) || []
@@ -46,7 +49,7 @@ class AwsAccount < ApplicationRecord
   end
 
   # Validations
-  validates :account_id, presence: true, uniqueness: true, 
+  validates :account_id, uniqueness: true, allow_blank: true,
             length: { maximum: 20 },
             format: { with: /\A\d{12}\z/, message: "必须是12位数字的AWS账号ID" }
   
@@ -60,7 +63,6 @@ class AwsAccount < ApplicationRecord
   
   # Callbacks
   before_validation :set_default_values
-  after_create :test_connection_async
 
   # Scopes
   scope :active, -> { where(status: :active) }
@@ -84,27 +86,6 @@ class AwsAccount < ApplicationRecord
     update!(deleted_at: nil, status: :active)
   end
 
-  # Connection testing
-  def test_connection
-    # This will be implemented when AWS service is ready
-    # For now, return mock result
-    update!(
-      connection_status: :connected,
-      last_connection_test_at: Time.current
-    )
-    true
-  rescue => e
-    update!(
-      connection_status: :error,
-      connection_error_message: e.message
-    )
-    false
-  end
-
-  def test_connection_async
-    # Queue job for connection testing
-    # RefreshQuotaJob.perform_later(self, test_only: true)
-  end
 
   # Quota management
   def has_high_quota?

@@ -18,6 +18,8 @@ Rails.application.routes.draw do
         patch :activate
         patch :deactivate
         post :refresh_quota
+        get 'account_quotas', to: 'account_quotas#account_quotas', as: :account_quotas
+        post 'account_quotas/refresh', to: 'account_quotas#refresh_account_quotas', as: :refresh_account_quotas
       end
       collection do
         post :bulk_refresh
@@ -33,14 +35,6 @@ Rails.application.routes.draw do
         post :bulk_refresh
         get :statistics
         get :export
-      end
-    end
-    
-    # Account-specific quota routes
-    resources :aws_accounts do
-      member do
-        get 'account_quotas', to: 'account_quotas#account_quotas', as: :account_quotas
-        post 'account_quotas/refresh', to: 'account_quotas#refresh_account_quotas', as: :refresh_account_quotas
       end
     end
     

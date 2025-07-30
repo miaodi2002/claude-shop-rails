@@ -218,9 +218,9 @@
               <% end %>
               
               <%= link_to admin_aws_account_path(account), 
-                  method: :delete,
                   data: { 
-                    confirm: "确定要删除账号 #{account.account_name} 吗？此操作不可撤销。",
+                    action: "click->confirm-dialog#open",
+                    confirm_message: "确定要删除账号 #{account.account_name} 吗？此操作不可撤销。",
                     turbo_method: :delete
                   },
                   class: "text-red-600 hover:text-red-900 text-sm font-medium" do %>
@@ -253,6 +253,8 @@
     </div>
   <% end %>
 </div>
+
+<%= render 'shared/confirm_dialog' %>
 
 <script>
 function toggleAllCheckboxes(selectAllCheckbox) {

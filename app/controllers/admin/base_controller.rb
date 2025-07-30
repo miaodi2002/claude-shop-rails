@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require 'ostruct'
 
 module Admin
   class BaseController < ApplicationController
@@ -34,9 +33,9 @@ module Admin
       @admin_nav_items = [
         { name: '仪表板', path: admin_dashboard_path, icon: 'dashboard' },
         { name: 'AWS账号', path: admin_aws_accounts_path, icon: 'cloud' },
-        { name: '配额管理', path: admin_quotas_path, icon: 'chart' },
+        { name: '配额管理', path: admin_account_quotas_path, icon: 'chart' },
         { name: '审计日志', path: admin_audit_logs_path, icon: 'history' },
-        { name: '系统设置', path: admin_settings_path, icon: 'settings' }
+        { name: '系统设置', path: admin_dashboard_path, icon: 'settings' }
       ]
       
       @admin_user_menu = [

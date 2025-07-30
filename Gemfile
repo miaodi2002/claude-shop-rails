@@ -30,6 +30,7 @@ gem 'jwt'
 gem 'aws-sdk-core'
 gem 'aws-sdk-bedrock'
 gem 'aws-sdk-servicequotas'
+gem 'aws-sdk-sts'
 
 # Encryption
 gem 'attr_encrypted'

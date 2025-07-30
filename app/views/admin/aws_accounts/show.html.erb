@@ -10,6 +10,14 @@
   <%= link_to '编辑账号', edit_admin_aws_account_path(@aws_account), 
       class: 'inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500' %>
   
+  <%= link_to '删除账号', admin_aws_account_path(@aws_account), 
+      data: { 
+        action: "click->confirm-dialog#open",
+        confirm_message: "确定要删除账号 #{@aws_account.account_name} 吗？此操作不可撤销。",
+        turbo_method: :delete
+      },
+      class: 'inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500' %>
+  
   <% if @aws_account.active? %>
     <% if @current_refresh_job %>
       <div class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-yellow-600">
@@ -209,71 +217,152 @@
 <!-- 配额信息 -->
 <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
   <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
-    <h3 class="text-lg leading-6 font-medium text-gray-900">配额信息</h3>
-    <p class="mt-1 max-w-2xl text-sm text-gray-500">各项服务的配额使用情况</p>
+    <h3 class="text-lg leading-6 font-medium text-gray-900">模型配额</h3>
+    <p class="mt-1 max-w-2xl text-sm text-gray-500">各Claude模型的RPM、TPM、TPD配额情况</p>
   </div>
   
   <div class="px-4 py-5 sm:p-6">
-    <% if @account_quotas.any? %>
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <% @account_quotas.each do |account_quota| %>
-          <div class="border border-gray-200 rounded-lg p-4">
-            <div class="flex items-center justify-between mb-2">
-              <h4 class="text-sm font-medium text-gray-900"><%= account_quota.quota_definition.service_name %></h4>
-              <span class="text-xs text-gray-500">
-                <%= account_quota.last_refreshed_at&.strftime('%m/%d %H:%M') || '未更新' %>
-              </span>
-            </div>
-            
-            <div class="flex items-center justify-between mb-1">
-              <span class="text-xs text-gray-500">Claude模型</span>
-              <span class="text-xs font-medium text-blue-600">
-                <%= account_quota.quota_definition.claude_model_name %>
-              </span>
-            </div>
-            
-            <div class="flex items-center justify-between mb-2">
-              <span class="text-xs text-gray-500">配额等级</span>
-              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
-                <%= case account_quota.quota_definition.quota_level
-                    when 'high' then 'bg-green-100 text-green-800'
-                    when 'low' then 'bg-red-100 text-red-800'
-                    else 'bg-gray-100 text-gray-800'
-                    end %>">
-                <%= account_quota.quota_definition.quota_level&.upcase || 'N/A' %>
-              </span>
-            </div>
-            
-            <div class="space-y-2">
-              <div class="flex justify-between text-sm">
-                <span class="text-gray-500">当前配额</span>
-                <span class="font-medium"><%= number_with_delimiter(account_quota.current_quota) %></span>
-              </div>
-              
-              <div class="flex justify-between text-sm">
-                <span class="text-gray-500">默认配额</span>
-                <span class="font-medium text-gray-600">
-                  <%= number_with_delimiter(account_quota.quota_definition.default_value) %>
+    <% if @quotas_by_model.any? %>
+      <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <% @quotas_by_model.each do |model_name, model_data| %>
+          <div class="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 p-6">
+            <!-- 模型名称 -->
+            <div class="flex items-center justify-between mb-4">
+              <h4 class="text-lg font-semibold text-gray-900 truncate"><%= model_name %></h4>
+              <div class="flex-shrink-0 flex items-center space-x-2">
+                <!-- 整体配额级别徽章 -->
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                  <%= case model_data[:overall_quota_level]
+                      when 'high' then 'bg-green-100 text-green-800'
+                      when 'medium' then 'bg-yellow-100 text-yellow-800'
+                      when 'low' then 'bg-red-100 text-red-800'
+                      else 'bg-gray-100 text-gray-800'
+                      end %>">
+                  <%= case model_data[:overall_quota_level]
+                      when 'high' then '高配额'
+                      when 'medium' then '中配额'
+                      when 'low' then '低配额'
+                      else '未知'
+                      end %>
+                </span>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  Claude
                 </span>
               </div>
-              
-              <% if account_quota.quota_definition.is_adjustable? %>
-                <div class="flex justify-between text-sm">
-                  <span class="text-gray-500">可调整</span>
-                  <span class="text-green-600 font-medium">是</span>
+            </div>
+            
+            <!-- 配额指标 -->
+            <div class="space-y-4">
+              <!-- RPM -->
+              <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                <div class="flex items-center space-x-2">
+                  <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span class="text-sm font-medium text-green-900">RPM</span>
+                  <% if model_data[:rpm] %>
+                    <span class="text-xs px-1.5 py-0.5 rounded-full font-medium
+                      <%= case model_data[:rpm].quota_level
+                          when 'high' then 'bg-green-200 text-green-700'
+                          when 'medium' then 'bg-yellow-200 text-yellow-700'
+                          when 'low' then 'bg-red-200 text-red-700'
+                          else 'bg-gray-200 text-gray-700'
+                          end %>">
+                      <%= model_data[:rpm].level_icon %>
+                    </span>
+                  <% end %>
                 </div>
-              <% end %>
+                <div class="text-right">
+                  <div class="text-lg font-bold text-green-800">
+                    <% if model_data[:rpm] %>
+                      <%= number_with_delimiter(model_data[:rpm].current_quota) %>
+                    <% else %>
+                      <span class="text-gray-400">N/A</span>
+                    <% end %>
+                  </div>
+                  <div class="text-xs text-green-600">请求/分钟</div>
+                </div>
+              </div>
+              
+              <!-- TPM -->
+              <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                <div class="flex items-center space-x-2">
+                  <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <span class="text-sm font-medium text-blue-900">TPM</span>
+                  <% if model_data[:tpm] %>
+                    <span class="text-xs px-1.5 py-0.5 rounded-full font-medium
+                      <%= case model_data[:tpm].quota_level
+                          when 'high' then 'bg-green-200 text-green-700'
+                          when 'medium' then 'bg-yellow-200 text-yellow-700'
+                          when 'low' then 'bg-red-200 text-red-700'
+                          else 'bg-gray-200 text-gray-700'
+                          end %>">
+                      <%= model_data[:tpm].level_icon %>
+                    </span>
+                  <% end %>
+                </div>
+                <div class="text-right">
+                  <div class="text-lg font-bold text-blue-800">
+                    <% if model_data[:tpm] %>
+                      <%= number_with_delimiter(model_data[:tpm].current_quota) %>
+                    <% else %>
+                      <span class="text-gray-400">N/A</span>
+                    <% end %>
+                  </div>
+                  <div class="text-xs text-blue-600">令牌/分钟</div>
+                </div>
+              </div>
+              
+              <!-- TPD -->
+              <div class="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+                <div class="flex items-center space-x-2">
+                  <div class="w-2 h-2 bg-purple-500 rounded-full"></div>
+                  <span class="text-sm font-medium text-purple-900">TPD</span>
+                  <% if model_data[:tpd] %>
+                    <span class="text-xs px-1.5 py-0.5 rounded-full font-medium
+                      <%= case model_data[:tpd].quota_level
+                          when 'high' then 'bg-green-200 text-green-700'
+                          when 'medium' then 'bg-yellow-200 text-yellow-700'
+                          when 'low' then 'bg-red-200 text-red-700'
+                          else 'bg-gray-200 text-gray-700'
+                          end %>">
+                      <%= model_data[:tpd].level_icon %>
+                    </span>
+                  <% end %>
+                </div>
+                <div class="text-right">
+                  <div class="text-lg font-bold text-purple-800">
+                    <% if model_data[:tpd] %>
+                      <%= number_with_delimiter(model_data[:tpd].current_quota) %>
+                    <% else %>
+                      <span class="text-gray-400">N/A</span>
+                    <% end %>
+                  </div>
+                  <div class="text-xs text-purple-600">令牌/天</div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 最后更新时间 -->
+            <div class="mt-4 pt-3 border-t border-gray-100">
+              <div class="text-xs text-gray-500 text-center">
+                最后更新: 
+                <% last_sync = [model_data[:rpm], model_data[:tpm], model_data[:tpd]].compact.map(&:last_sync_at).compact.max %>
+                <% if last_sync %>
+                  <%= last_sync.strftime('%m/%d %H:%M') %>
+                <% else %>
+                  未更新
+                <% end %>
+              </div>
             </div>
           </div>
         <% end %>
       </div>
     <% else %>
-      <div class="text-center py-8">
-        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2-2V7a2 2 0 012-2h2a2 2 0 002 2v2a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 00-2 2h-2a2 2 0 00-2 2v6a2 2 0 01-2 2H9z" />
+      <div class="text-center py-12">
+        <svg class="mx-auto h-16 w-16 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2-2V7a2 2 0 012-2h2a2 2 0 002 2v2a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 00-2 2h-2a2 2 0 00-2 2v6a2 2 0 01-2 2H9z" />
         </svg>
-        <h3 class="mt-2 text-sm font-medium text-gray-900">暂无配额数据</h3>
-        <p class="mt-1 text-sm text-gray-500">
+        <h3 class="mt-4 text-lg font-medium text-gray-900">暂无配额数据</h3>
+        <p class="mt-2 text-sm text-gray-500">
           <%= @aws_account.active? ? '点击上方"刷新配额"按钮获取最新数据' : '激活账号后可获取配额数据' %>
         </p>
       </div>
@@ -282,44 +371,44 @@
 </div>
 
 <!-- 配额历史 -->
-<% if @recent_quota_histories.any? %>
+<% if @recent_quota_histories&.any? %>
   <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
     <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
-      <h3 class="text-lg leading-6 font-medium text-gray-900">最近配额变更</h3>
-      <p class="mt-1 max-w-2xl text-sm text-gray-500">最近10次配额更新记录</p>
+      <h3 class="text-lg leading-6 font-medium text-gray-900">最近配额同步</h3>
+      <p class="mt-1 max-w-2xl text-sm text-gray-500">最近10次配额同步记录</p>
     </div>
     
     <div class="overflow-x-auto">
       <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
           <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">服务</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">配额限制</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">配额名称</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">当前配额</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">配额等级</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">更新时间</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">同步时间</th>
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
-          <% @recent_quota_histories.each do |history| %>
+          <% @recent_quota_histories.each do |quota| %>
             <tr>
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                <%= history.service_code %>
+                <%= quota.quota_definition.quota_name %>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                <%= number_with_delimiter(history.quota_limit) %>
+                <%= number_with_delimiter(quota.current_quota) %>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
-                  <%= case history.quota&.quota_level
+                  <%= case quota.quota_level
                       when 'high' then 'bg-green-100 text-green-800'
                       when 'low' then 'bg-red-100 text-red-800'
                       else 'bg-gray-100 text-gray-800'
                       end %>">
-                  <%= history.quota&.quota_level&.upcase || 'N/A' %>
+                  <%= quota.display_quota_level %>
                 </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                <%= history.created_at.strftime('%m月%d日 %H:%M') %>
+                <%= quota.last_sync_at&.strftime('%m月%d日 %H:%M') || 'N/A' %>
               </td>
             </tr>
           <% end %>
@@ -377,3 +466,5 @@
     </div>
   </div>
 <% end %>
+
+<%= render 'shared/confirm_dialog' %>
