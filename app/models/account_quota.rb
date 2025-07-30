@@ -20,8 +20,9 @@ class AccountQuota < ApplicationRecord
   
   enum :quota_level, { 
     unknown: 'unknown', 
-    high: 'high', 
-    low: 'low' 
+    low: 'low',
+    medium: 'medium',
+    high: 'high' 
   }, default: 'unknown'
   
   # Scopes
@@ -32,6 +33,7 @@ class AccountQuota < ApplicationRecord
     joins(:quota_definition).where(quota_definitions: { quota_type: quota_type }) 
   }
   scope :high_level, -> { where(quota_level: 'high') }
+  scope :medium_level, -> { where(quota_level: 'medium') }
   scope :low_level, -> { where(quota_level: 'low') }
   scope :recently_synced, -> { where('last_sync_at > ?', 24.hours.ago) }
   scope :sync_failed, -> { where(sync_status: 'failed') }
@@ -95,6 +97,7 @@ class AccountQuota < ApplicationRecord
   def level_color
     case quota_level
     when 'high' then 'green'
+    when 'medium' then 'yellow'
     when 'low' then 'red'
     else 'gray'
     end
@@ -103,6 +106,7 @@ class AccountQuota < ApplicationRecord
   def level_icon
     case quota_level
     when 'high' then '✅'
+    when 'medium' then '🟡'
     when 'low' then '⚠️'
     else '❓'
     end
@@ -123,6 +127,8 @@ class AccountQuota < ApplicationRecord
     case quota_level
     when 'high'
       '高配额'
+    when 'medium'
+      '中配额'
     when 'low'
       '低配额'
     else
@@ -138,6 +144,14 @@ class AccountQuota < ApplicationRecord
     quota_level == 'high'
   end
 
+  def has_medium_quota?
+    quota_level == 'medium'
+  end
+
+  def has_low_quota?
+    quota_level == 'low'
+  end
+
   def sync_success?
     sync_status == 'success'
   end
@@ -151,7 +165,16 @@ class AccountQuota < ApplicationRecord
   def calculate_level(current_value)
     return 'unknown' if current_value.nil?
     
-    default_val = quota_definition.default_value || 0
-    current_value >= default_val ? 'high' : 'low'
+    default_val = quota_definition.default_value
+    return 'unknown' if default_val.nil?
+    
+    # 三级判断逻辑：低于默认值为低配额，等于默认值为中配额，高于默认值为高配额
+    if current_value < default_val
+      'low'
+    elsif current_value == default_val
+      'medium'
+    else
+      'high'
+    end
   end
 end

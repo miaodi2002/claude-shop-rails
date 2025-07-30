@@ -129,32 +129,9 @@ class AwsService
     
     # Refresh quota for a specific AWS account
     def refresh_account_quotas(aws_account)
-      result = get_quota_info(
-        aws_account.access_key,
-        aws_account.secret_key,
-        aws_account.region || DEFAULT_REGION
-      )
-      
-      if result[:success]
-        # Update quotas in database
-        Quota.transaction do
-          result[:quotas].each do |quota_data|
-            quota = aws_account.quotas.find_or_initialize_by(
-              service_name: quota_data[:model_name],
-              quota_type: quota_data[:quota_type]
-            )
-            
-            quota.update!(
-              quota_limit: parse_quota_value(quota_data[:quota_limit]) || 0,
-              default_value: parse_quota_value(quota_data[:default_value]) || 0,
-              is_adjustable: quota_data[:is_adjustable],
-              quota_level: quota_data[:quota_level],
-              aws_quota_code: quota_data[:aws_quota_code],
-              last_updated_at: Time.current,
-              update_status: :success
-            )
-          end
-        end
+      # 使用新的 AwsQuotaService 来刷新配额
+      begin
+        results = AwsQuotaService.refresh_all_quotas(aws_account)
         
         # Update account connection status
         aws_account.update!(
@@ -163,18 +140,36 @@ class AwsService
           connection_error_message: nil
         )
         
-        result
-      else
+        {
+          success: true,
+          quotas: aws_account.account_quotas.includes(:quota_definition).map do |aq|
+            {
+              model_name: aq.quota_definition.claude_model_name,
+              quota_type: aq.quota_definition.quota_type,
+              current_quota: aq.current_quota,
+              quota_level: aq.quota_level,
+              is_adjustable: aq.is_adjustable
+            }
+          end,
+          successful: results[:success],
+          failed: results[:failed],
+          errors: results[:errors]
+        }
+      rescue => e
         # Update account with error status
         aws_account.update!(
           connection_status: :error,
-          connection_error_message: result[:error]
+          connection_error_message: e.message
         )
         
         # Mark all quotas as failed
-        aws_account.quotas.update_all(update_status: :failed)
+        aws_account.account_quotas.update_all(sync_status: 'failed', sync_error: e.message)
         
-        result
+        {
+          success: false,
+          error: e.message,
+          error_code: 'REFRESH_ERROR'
+        }
       end
     end
     

@@ -35,14 +35,22 @@ class RefreshQuotaJob < ApplicationJob
     refresh_job = RefreshJob.create_single_job(aws_account, job_type: options[:job_type] || :automatic)
     refresh_job.start!
     
+    # Update progress to indicate job has started
+    refresh_job.update_progress(0)
+    
     begin
       # Set audit context
       AuditContextService.set_context(admin: nil)
+      
+      # Update progress to 50% before starting refresh
+      refresh_job.update_progress(0.5)
       
       # Refresh quotas
       result = AwsService.refresh_account_quotas(aws_account)
       
       if result[:success]
+        # Update progress to 100% before completion
+        refresh_job.update_progress(1.0)
         refresh_job.complete!(1, 0)
         
         # Log success
@@ -52,7 +60,7 @@ class RefreshQuotaJob < ApplicationJob
           metadata: {
             job_id: refresh_job.id,
             quotas_updated: result[:quotas].count,
-            total_remaining: result[:quotas].sum { |q| q[:quota_remaining] }
+            total_quota: result[:quotas].sum { |q| q[:current_quota] || 0 }
           }
         )
         
@@ -96,7 +104,7 @@ class RefreshQuotaJob < ApplicationJob
   end
   
   def refresh_all_accounts(options = {})
-    accounts = AwsAccount.active.includes(:quotas)
+    accounts = AwsAccount.active.includes(:account_quotas)
     
     # Skip if no accounts
     if accounts.empty?

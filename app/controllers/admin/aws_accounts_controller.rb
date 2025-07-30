@@ -26,6 +26,9 @@ module Admin
       @recent_refresh_jobs = RefreshJob.for_account(@aws_account).recent.limit(5)
       @current_refresh_job = RefreshJob.for_account(@aws_account).in_progress.first
       
+      # 按模型分组配额数据，用于简化显示
+      @quotas_by_model = group_quotas_by_model(@account_quotas)
+      
       # 临时解决方案：使用最近同步的配额作为历史记录
       # TODO: 实现专门的配额历史追踪表
       @recent_quota_histories = @aws_account.account_quotas
@@ -42,15 +45,28 @@ module Admin
     def create
       @aws_account = AwsAccount.new(aws_account_params)
       
+      # 首先验证AWS凭证并获取账号ID
+      account_info_result = AwsAccountInfoService.fetch_and_set_account_id(@aws_account)
+      
+      unless account_info_result[:success]
+        @aws_account.errors.add(:access_key, account_info_result[:error])
+        render :new, status: :unprocessable_entity
+        return
+      end
+      
       if @aws_account.save
         # 记录审计日志
-        audit_log('create', "创建AWS账号: #{@aws_account.name}")
+        audit_log('create', "创建AWS账号: #{@aws_account.name} (账号ID: #{@aws_account.account_id})")
         
         # 异步获取配额信息
-        RefreshQuotaJob.perform_later(@aws_account.id) if @aws_account.active?
+        if @aws_account.active?
+          RefreshQuotaJob.perform_later(@aws_account.id, { job_type: :manual })
+          notice_message = "AWS账号 #{@aws_account.name} 创建成功，账号ID: #{@aws_account.account_id}。正在获取配额信息..."
+        else
+          notice_message = "AWS账号 #{@aws_account.name} 创建成功，账号ID: #{@aws_account.account_id}"
+        end
         
-        redirect_to admin_aws_account_path(@aws_account), 
-                    notice: "AWS账号 #{@aws_account.name} 创建成功"
+        redirect_to admin_aws_account_path(@aws_account), notice: notice_message
       else
         render :new, status: :unprocessable_entity
       end
@@ -178,7 +194,7 @@ module Admin
     
     def aws_account_params
       params.require(:aws_account).permit(
-        :name, :account_id, :access_key, :secret_key, 
+        :name, :access_key, :secret_key, 
         :region, :status, :description, :tags
       )
     end
@@ -225,7 +241,7 @@ module Admin
             include: {
               account_quotas: { 
                 include: :quota_definition,
-                only: [:current_quota, :quota_limit, :last_refreshed_at] 
+                only: [:current_quota, :quota_limit, :last_sync_at] 
               }
             },
             methods: [:display_status, :masked_access_key]
@@ -283,6 +299,60 @@ module Admin
           ]
         end
       end
+    end
+    
+    def group_quotas_by_model(account_quotas)
+      # 按模型名称分组配额数据
+      grouped = account_quotas.group_by { |quota| quota.quota_definition.claude_model_name }
+      
+      # 为每个模型整理RPM、TPM、TPD数据
+      result = {}
+      grouped.each do |model_name, quotas|
+        model_data = {
+          name: model_name,
+          rpm: nil,
+          tpm: nil,
+          tpd: nil
+        }
+        
+        quotas.each do |quota|
+          case quota.quota_definition.quota_type
+          when 'requests_per_minute'
+            model_data[:rpm] = quota
+          when 'tokens_per_minute'
+            model_data[:tpm] = quota
+          when 'tokens_per_day'
+            model_data[:tpd] = quota
+          end
+        end
+        
+        # 计算模型整体配额级别（取最低级别）
+        model_data[:overall_quota_level] = calculate_model_overall_quota_level(model_data)
+        
+        result[model_name] = model_data
+      end
+      
+      result
+    end
+
+    def calculate_model_overall_quota_level(model_data)
+      # 收集所有可用的配额级别
+      levels = []
+      levels << model_data[:rpm].quota_level if model_data[:rpm]
+      levels << model_data[:tpm].quota_level if model_data[:tpm]  
+      levels << model_data[:tpd].quota_level if model_data[:tpd]
+      
+      # 如果没有配额数据，返回未知
+      return 'unknown' if levels.empty?
+      
+      # 过滤掉unknown级别
+      valid_levels = levels.reject { |level| level == 'unknown' }
+      return 'unknown' if valid_levels.empty?
+      
+      # 优先级：low > medium > high（取最严格的限制）
+      return 'low' if valid_levels.include?('low')
+      return 'medium' if valid_levels.include?('medium')
+      'high'
     end
     
     def audit_log(action, details)

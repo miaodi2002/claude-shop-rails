@@ -131,6 +131,10 @@ class AuditLog < ApplicationRecord
     change_details
   end
 
+  def details
+    metadata&.dig('details') || ''
+  end
+
   private
 
   def set_defaults

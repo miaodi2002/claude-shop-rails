@@ -59,9 +59,13 @@ class QuotaDefinition < ApplicationRecord
   end
 
   # Additional compatibility methods
-  def quota_level
+  # 注意：这个方法返回的是定义级别，不是实际配额级别
+  # 实际配额级别应该通过AccountQuota.calculate_level计算
+  def definition_quota_level
     return 'unknown' unless default_value
-    default_value >= 1000 ? 'high' : 'low'
+    # 这里可以根据需要定义配额定义本身的级别分类
+    # 但通常不需要，建议使用AccountQuota的级别判断
+    'medium' # 默认值被视为中配额基准
   end
 
   def is_adjustable?

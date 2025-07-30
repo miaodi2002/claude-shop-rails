@@ -100,15 +100,22 @@ class RefreshJob < ApplicationRecord
     )
   end
 
-  def update_progress(processed_count)
+  def update_progress(processed_count_or_ratio)
     return unless running?
     return if total_accounts.zero?
+
+    # 如果传入的是比例（0.0-1.0），转换为实际账号数
+    if processed_count_or_ratio.is_a?(Float) && processed_count_or_ratio <= 1.0
+      processed_count = (processed_count_or_ratio * total_accounts).round
+    else
+      processed_count = processed_count_or_ratio.to_i
+    end
 
     update!(processed_accounts: processed_count)
   end
   
   def progress_percentage
-    return 0 if total_accounts.zero?
+    return 0 if total_accounts.zero? || processed_accounts.nil?
     [(processed_accounts.to_f / total_accounts * 100).round(2), 100].min
   end
 
@@ -185,6 +192,7 @@ class RefreshJob < ApplicationRecord
   def set_defaults
     self.successful_accounts = 0
     self.failed_accounts = 0
+    self.processed_accounts = 0
   end
 
   def update_completion_time

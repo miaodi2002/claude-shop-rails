@@ -17,26 +17,13 @@
     </div>
     
     <div class="px-6 py-4 space-y-6">
-      <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-        <div>
-          <%= form.label :name, "账号名称", class: "block text-sm font-medium text-gray-700" %>
-          <%= form.text_field :name, 
-              class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm",
-              placeholder: "例如：生产环境账号",
-              required: true %>
-          <p class="mt-1 text-sm text-gray-500">用于标识和管理的显示名称</p>
-        </div>
-
-        <div>
-          <%= form.label :account_id, "AWS账号ID", class: "block text-sm font-medium text-gray-700" %>
-          <%= form.text_field :account_id, 
-              class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm",
-              placeholder: "123456789012",
-              required: true,
-              pattern: "\\d{12}",
-              title: "请输入12位数字的AWS账号ID" %>
-          <p class="mt-1 text-sm text-gray-500">12位数字的AWS账号ID</p>
-        </div>
+      <div>
+        <%= form.label :name, "账号名称", class: "block text-sm font-medium text-gray-700" %>
+        <%= form.text_field :name, 
+            class: "mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm",
+            placeholder: "例如：生产环境账号",
+            required: true %>
+        <p class="mt-1 text-sm text-gray-500">用于标识和管理的显示名称，AWS账号ID将在创建后自动获取</p>
       </div>
 
       <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -167,21 +154,6 @@
 <script>
 // 表单验证
 document.addEventListener('DOMContentLoaded', function() {
-  const form = document.querySelector('form');
-  const accountIdField = document.querySelector('#aws_account_account_id');
-  
-  if (accountIdField) {
-    accountIdField.addEventListener('input', function(e) {
-      // 只允许输入数字
-      e.target.value = e.target.value.replace(/\D/g, '');
-      
-      // 限制长度为12位
-      if (e.target.value.length > 12) {
-        e.target.value = e.target.value.substring(0, 12);
-      }
-    });
-  }
-  
   // 标签处理
   const tagsField = document.querySelector('#aws_account_tags');
   if (tagsField) {

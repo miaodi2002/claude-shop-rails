@@ -35,3 +35,21 @@
 
 /app/assets/builds/*
 !/app/assets/builds/.keep
+
+# Development and debugging files
+create_*.rb
+test_*.rb
+debug_*.rb
+cleanup_*.rb
+/tmp/*.rb
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
