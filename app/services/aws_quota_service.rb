@@ -31,8 +31,7 @@ class AwsQuotaService
       # Claude 3.5 Sonnet V1
       { 
         quota_code: 'L-254CACF4', 
-        claude_model_name: 'Claude 3.5 Sonnet', 
-        model_version: 'V1', 
+        claude_model_name: 'Claude 3.5 Sonnet V1', 
         quota_type: 'requests_per_minute', 
         quota_name: 'On-demand model inference requests per minute for Anthropic Claude 3.5 Sonnet', 
         call_type: 'On-demand',
@@ -40,8 +39,7 @@ class AwsQuotaService
       },
       { 
         quota_code: 'L-A50569E5', 
-        claude_model_name: 'Claude 3.5 Sonnet', 
-        model_version: 'V1', 
+        claude_model_name: 'Claude 3.5 Sonnet V1', 
         quota_type: 'tokens_per_minute', 
         quota_name: 'On-demand model inference tokens per minute for Anthropic Claude 3.5 Sonnet', 
         call_type: 'On-demand',
@@ -51,8 +49,7 @@ class AwsQuotaService
       # Claude 3.5 Sonnet V2
       { 
         quota_code: 'L-79E773B3', 
-        claude_model_name: 'Claude 3.5 Sonnet', 
-        model_version: 'V2', 
+        claude_model_name: 'Claude 3.5 Sonnet V2', 
         quota_type: 'requests_per_minute', 
         quota_name: 'On-demand model inference requests per minute for Anthropic Claude 3.5 Sonnet V2', 
         call_type: 'On-demand',
@@ -60,8 +57,7 @@ class AwsQuotaService
       },
       { 
         quota_code: 'L-AD41C330', 
-        claude_model_name: 'Claude 3.5 Sonnet', 
-        model_version: 'V2', 
+        claude_model_name: 'Claude 3.5 Sonnet V2', 
         quota_type: 'tokens_per_minute', 
         quota_name: 'On-demand model inference tokens per minute for Anthropic Claude 3.5 Sonnet V2', 
         call_type: 'On-demand',
@@ -71,8 +67,7 @@ class AwsQuotaService
       # Claude 3.7 Sonnet V1
       { 
         quota_code: 'L-3D8CC480', 
-        claude_model_name: 'Claude 3.7 Sonnet', 
-        model_version: 'V1', 
+        claude_model_name: 'Claude 3.7 Sonnet V1', 
         quota_type: 'requests_per_minute', 
         quota_name: 'Cross-region model inference requests per minute for Anthropic Claude 3.7 Sonnet V1', 
         call_type: 'Cross-region',
@@ -80,8 +75,7 @@ class AwsQuotaService
       },
       { 
         quota_code: 'L-6E888CC2', 
-        claude_model_name: 'Claude 3.7 Sonnet', 
-        model_version: 'V1', 
+        claude_model_name: 'Claude 3.7 Sonnet V1', 
         quota_type: 'tokens_per_minute', 
         quota_name: 'Cross-region model inference tokens per minute for Anthropic Claude 3.7 Sonnet V1', 
         call_type: 'Cross-region',
@@ -89,8 +83,7 @@ class AwsQuotaService
       },
       { 
         quota_code: 'L-9EB71894', 
-        claude_model_name: 'Claude 3.7 Sonnet', 
-        model_version: 'V1', 
+        claude_model_name: 'Claude 3.7 Sonnet V1', 
         quota_type: 'tokens_per_day', 
         quota_name: 'Model invocation max tokens per day for Anthropic Claude 3.7 Sonnet V1 (doubled for cross-region calls)', 
         call_type: 'Cross-region',
@@ -100,8 +93,7 @@ class AwsQuotaService
       # Claude 4 Sonnet V1
       { 
         quota_code: 'L-559DCC33', 
-        claude_model_name: 'Claude 4 Sonnet', 
-        model_version: 'V1', 
+        claude_model_name: 'Claude 4 Sonnet V1', 
         quota_type: 'requests_per_minute', 
         quota_name: 'Cross-region model inference requests per minute for Anthropic Claude Sonnet 4 V1', 
         call_type: 'Cross-region',
@@ -109,8 +101,7 @@ class AwsQuotaService
       },
       { 
         quota_code: 'L-59759B4A', 
-        claude_model_name: 'Claude 4 Sonnet', 
-        model_version: 'V1', 
+        claude_model_name: 'Claude 4 Sonnet V1', 
         quota_type: 'tokens_per_minute', 
         quota_name: 'Cross-region model inference tokens per minute for Anthropic Claude Sonnet 4 V1', 
         call_type: 'Cross-region',
@@ -118,8 +109,7 @@ class AwsQuotaService
       },
       { 
         quota_code: 'L-22F701C5', 
-        claude_model_name: 'Claude 4 Sonnet', 
-        model_version: 'V1', 
+        claude_model_name: 'Claude 4 Sonnet V1', 
         quota_type: 'tokens_per_day', 
         quota_name: 'Model invocation max tokens per day for Anthropic Claude Sonnet 4 V1 (doubled for cross-region calls)', 
         call_type: 'Cross-region',
@@ -137,7 +127,7 @@ class AwsQuotaService
         
         if qd.update(definition)
           success_count += 1
-          Rails.logger.info "Synced quota definition: #{definition[:claude_model_name]} #{definition[:model_version]} - #{definition[:quota_type]}"
+          Rails.logger.info "Synced quota definition: #{definition[:claude_model_name]} - #{definition[:quota_type]}"
         else
           Rails.logger.error "Failed to sync quota definition: #{qd.errors.full_messages.join(', ')}"
         end
@@ -249,7 +239,7 @@ class AwsQuotaService
       when /Claude 3.5 Sonnet/, /Claude 3.7 Sonnet/, /Claude 4 Sonnet/
         ['requests_per_minute', 'tokens_per_minute', 'tokens_per_day'].select do |type|
           # 检查这个模型是否有这种类型的配额定义
-          QUOTA_DEFINITIONS.any? { |quota_def| quota_def[:claude_model_name].include?(model_name.split(' V')[0]) && quota_def[:quota_type] == type }
+          QUOTA_DEFINITIONS.any? { |quota_def| quota_def[:claude_model_name].start_with?(model_name.split(' V')[0]) && quota_def[:quota_type] == type }
         end
       else
         []

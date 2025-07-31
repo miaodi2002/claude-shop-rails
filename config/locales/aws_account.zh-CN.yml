@@ -5,6 +5,7 @@ zh-CN:
       inactive: "停用"
       sold_out: "已售出"
       maintenance: "维护中"
+      for_sale: "待售"
     connection_status:
       connected: "已连接"
       error: "连接错误"

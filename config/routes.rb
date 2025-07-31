@@ -90,6 +90,17 @@ Rails.application.routes.draw do
   # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
 
+  # Public routes (前台展示)
+  namespace :public do
+    root 'home#index'
+    resources :accounts, only: [:index, :show] do
+      collection do
+        get :search
+        get :filter
+      end
+    end
+  end
+
   # Defines the root path route ("/")
-  root "admin/dashboard#index"
+  root "public/home#index"
 end

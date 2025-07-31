@@ -121,8 +121,72 @@ claude-shop-rails/
 3. **Write/Edit**: 编写和修改代码文件
 4. **Bash**: 执行开发环境相关命令
 
+## 🗄️ 数据库查询手册
+
+### 数据库连接
+使用Docker连接到MySQL数据库：
+```bash
+docker exec claude_shop_mysql mysql -u root -p'claude_shop_root_2024' claude_shop_development
+```
+
+### 常用查询
+
+#### 1. 查询特定账号信息
+```sql
+-- 查找账号基本信息
+SELECT id, name, account_id, status FROM aws_accounts WHERE name = 'f-01';
+
+-- 查询账号的所有配额
+SELECT 
+    qd.claude_model_name,
+    qd.quota_type,
+    aq.current_quota,
+    qd.default_value,
+    aq.quota_level,
+    aq.sync_status
+FROM account_quotas aq 
+JOIN quota_definitions qd ON aq.quota_definition_id = qd.id 
+WHERE aq.aws_account_id = [ACCOUNT_ID]
+ORDER BY qd.claude_model_name, qd.quota_type;
+```
+
+#### 2. 配额级别判断逻辑
+- **low**: current_quota < default_value
+- **medium**: current_quota = default_value  
+- **high**: current_quota > default_value
+
+#### 3. f-01账号配额详情 (最后更新: 2025-07-31)
+```
+账号ID: 8, 名称: f-01, AWS账号: 730335638719
+
+配额详情:
+- Claude 3.5 Sonnet V1 RPM: 1 (默认50) → low 🔴
+- Claude 3.5 Sonnet V1 TPM: 400000 (默认400000) → medium 🔵
+  → 最终显示: 🔴 low (受限于RPM低配额)
+
+- Claude 3.5 Sonnet V2 RPM: 50 (默认50) → medium 🔵  
+- Claude 3.5 Sonnet V2 TPM: 400000 (默认400000) → medium 🔵
+  → 最终显示: 🔵 medium (两项都是标准配额)
+
+- Claude 3.7 Sonnet V1 RPM: 250 (默认250) → medium 🔵
+- Claude 3.7 Sonnet V1 TPM: 1000000 (默认1000000) → medium 🔵
+- Claude 3.7 Sonnet V1 TPD: 5400000 (默认720000000) → low 🔴
+  → 最终显示: 🔴 low (受限于TPD低配额)
+
+- Claude 4 Sonnet V1 RPM: 2 (默认200) → low 🔴
+- Claude 4 Sonnet V1 TPM: 200000 (默认200000) → medium 🔵  
+- Claude 4 Sonnet V1 TPD: 5400000 (默认144000000) → low 🔴
+  → 最终显示: 🔴 low (受限于RPM和TPD低配额)
+```
+
+#### 4. available_models_with_levels 显示逻辑
+基于每个模型的**最低配额级别**显示（木桶效应 - 最薄弱环节决定整体性能）：
+- 如果模型有任何low级别配额 → 显示红色（受限于低配额）
+- 如果模型有任何medium级别配额（无low） → 显示蓝色  
+- 如果模型只有high级别配额 → 显示绿色
+
 ---
 
 **配置生效**: 立即生效，每次新对话自动应用
-**最后更新**: 2025-07-25
-**下次评审**: Phase 1完成后
+**最后更新**: 2025-07-31
+**下次评审**: Phase 3完成后
