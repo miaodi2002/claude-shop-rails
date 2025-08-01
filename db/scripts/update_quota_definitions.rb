@@ -10,16 +10,16 @@ puts '=' * 60
 
 # Correct default values from AWS Console (from service file)
 correct_definitions = [
-  { quota_code: 'L-254CACF4', claude_model_name: 'Claude 3.5 Sonnet', model_version: 'V1', quota_type: 'requests_per_minute', quota_name: 'On-demand model inference requests per minute for Anthropic Claude 3.5 Sonnet', call_type: 'On-demand', default_value: 50 },
-  { quota_code: 'L-A50569E5', claude_model_name: 'Claude 3.5 Sonnet', model_version: 'V1', quota_type: 'tokens_per_minute', quota_name: 'On-demand model inference tokens per minute for Anthropic Claude 3.5 Sonnet', call_type: 'On-demand', default_value: 400000 },
-  { quota_code: 'L-79E773B3', claude_model_name: 'Claude 3.5 Sonnet', model_version: 'V2', quota_type: 'requests_per_minute', quota_name: 'On-demand model inference requests per minute for Anthropic Claude 3.5 Sonnet V2', call_type: 'On-demand', default_value: 50 },
-  { quota_code: 'L-AD41C330', claude_model_name: 'Claude 3.5 Sonnet', model_version: 'V2', quota_type: 'tokens_per_minute', quota_name: 'On-demand model inference tokens per minute for Anthropic Claude 3.5 Sonnet V2', call_type: 'On-demand', default_value: 400000 },
-  { quota_code: 'L-3D8CC480', claude_model_name: 'Claude 3.7 Sonnet', model_version: 'V1', quota_type: 'requests_per_minute', quota_name: 'Cross-region model inference requests per minute for Anthropic Claude 3.7 Sonnet V1', call_type: 'Cross-region', default_value: 250 },
-  { quota_code: 'L-6E888CC2', claude_model_name: 'Claude 3.7 Sonnet', model_version: 'V1', quota_type: 'tokens_per_minute', quota_name: 'Cross-region model inference tokens per minute for Anthropic Claude 3.7 Sonnet V1', call_type: 'Cross-region', default_value: 1000000 },
-  { quota_code: 'L-9EB71894', claude_model_name: 'Claude 3.7 Sonnet', model_version: 'V1', quota_type: 'tokens_per_day', quota_name: 'Model invocation max tokens per day for Anthropic Claude 3.7 Sonnet V1 (doubled for cross-region calls)', call_type: 'Cross-region', default_value: 720000000 },
-  { quota_code: 'L-559DCC33', claude_model_name: 'Claude 4 Sonnet', model_version: 'V1', quota_type: 'requests_per_minute', quota_name: 'Cross-region model inference requests per minute for Anthropic Claude Sonnet 4 V1', call_type: 'Cross-region', default_value: 200 },
-  { quota_code: 'L-59759B4A', claude_model_name: 'Claude 4 Sonnet', model_version: 'V1', quota_type: 'tokens_per_minute', quota_name: 'Cross-region model inference tokens per minute for Anthropic Claude Sonnet 4 V1', call_type: 'Cross-region', default_value: 200000 },
-  { quota_code: 'L-22F701C5', claude_model_name: 'Claude 4 Sonnet', model_version: 'V1', quota_type: 'tokens_per_day', quota_name: 'Model invocation max tokens per day for Anthropic Claude Sonnet 4 V1 (doubled for cross-region calls)', call_type: 'Cross-region', default_value: 144000000 }
+  { quota_code: 'L-254CACF4', claude_model_name: 'Claude 3.5 Sonnet V1', quota_type: 'requests_per_minute', quota_name: 'On-demand model inference requests per minute for Anthropic Claude 3.5 Sonnet', call_type: 'On-demand', default_value: 50 },
+  { quota_code: 'L-A50569E5', claude_model_name: 'Claude 3.5 Sonnet V1', quota_type: 'tokens_per_minute', quota_name: 'On-demand model inference tokens per minute for Anthropic Claude 3.5 Sonnet', call_type: 'On-demand', default_value: 400000 },
+  { quota_code: 'L-79E773B3', claude_model_name: 'Claude 3.5 Sonnet V2', quota_type: 'requests_per_minute', quota_name: 'On-demand model inference requests per minute for Anthropic Claude 3.5 Sonnet V2', call_type: 'On-demand', default_value: 50 },
+  { quota_code: 'L-AD41C330', claude_model_name: 'Claude 3.5 Sonnet V2', quota_type: 'tokens_per_minute', quota_name: 'On-demand model inference tokens per minute for Anthropic Claude 3.5 Sonnet V2', call_type: 'On-demand', default_value: 400000 },
+  { quota_code: 'L-3D8CC480', claude_model_name: 'Claude 3.7 Sonnet V1', quota_type: 'requests_per_minute', quota_name: 'Cross-region model inference requests per minute for Anthropic Claude 3.7 Sonnet V1', call_type: 'Cross-region', default_value: 250 },
+  { quota_code: 'L-6E888CC2', claude_model_name: 'Claude 3.7 Sonnet V1', quota_type: 'tokens_per_minute', quota_name: 'Cross-region model inference tokens per minute for Anthropic Claude 3.7 Sonnet V1', call_type: 'Cross-region', default_value: 1000000 },
+  { quota_code: 'L-9EB71894', claude_model_name: 'Claude 3.7 Sonnet V1', quota_type: 'tokens_per_day', quota_name: 'Model invocation max tokens per day for Anthropic Claude 3.7 Sonnet V1 (doubled for cross-region calls)', call_type: 'Cross-region', default_value: 720000000 },
+  { quota_code: 'L-559DCC33', claude_model_name: 'Claude 4 Sonnet V1', quota_type: 'requests_per_minute', quota_name: 'Cross-region model inference requests per minute for Anthropic Claude Sonnet 4 V1', call_type: 'Cross-region', default_value: 200 },
+  { quota_code: 'L-59759B4A', claude_model_name: 'Claude 4 Sonnet V1', quota_type: 'tokens_per_minute', quota_name: 'Cross-region model inference tokens per minute for Anthropic Claude Sonnet 4 V1', call_type: 'Cross-region', default_value: 200000 },
+  { quota_code: 'L-22F701C5', claude_model_name: 'Claude 4 Sonnet V1', quota_type: 'tokens_per_day', quota_name: 'Model invocation max tokens per day for Anthropic Claude Sonnet 4 V1 (doubled for cross-region calls)', call_type: 'Cross-region', default_value: 144000000 }
 ]
 
 updated_count = 0
@@ -35,7 +35,7 @@ correct_definitions.each do |correct_def|
     old_default = db_record.default_value.to_i
     new_default = correct_def[:default_value]
     
-    puts "#{correct_def[:quota_code]}: #{correct_def[:claude_model_name]} #{correct_def[:model_version]} - #{correct_def[:quota_type]}"
+    puts "#{correct_def[:quota_code]}: #{correct_def[:claude_model_name]} - #{correct_def[:quota_type]}"
     puts "  Current DB: #{old_default}"
     puts "  Should be:  #{new_default}"
     

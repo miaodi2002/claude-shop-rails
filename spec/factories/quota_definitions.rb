@@ -3,8 +3,7 @@
 FactoryBot.define do
   factory :quota_definition do
     sequence(:quota_code) { |n| "QUOTA_#{n}" }
-    claude_model_name { 'claude-3-sonnet' }
-    model_version { '20241022' }
+    claude_model_name { 'claude-3-sonnet V1' }
     quota_type { 'tokens_per_minute' }
     quota_name { 'Claude 3 Sonnet Token Rate Limit' }
     call_type { 'sync' }
@@ -22,12 +21,12 @@ FactoryBot.define do
     end
 
     trait :haiku do
-      claude_model_name { 'claude-3-haiku' }
+      claude_model_name { 'claude-3-haiku V1' }
       quota_name { 'Claude 3 Haiku Token Rate Limit' }
     end
 
     trait :sonnet do
-      claude_model_name { 'claude-3-sonnet' }
+      claude_model_name { 'claude-3-sonnet V1' }
       quota_name { 'Claude 3 Sonnet Token Rate Limit' }
     end
 

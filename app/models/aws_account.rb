@@ -17,7 +17,8 @@ class AwsAccount < ApplicationRecord
     active: 0,
     inactive: 1,
     sold_out: 2,
-    maintenance: 3
+    maintenance: 3,
+    for_sale: 4
   }
 
   enum :connection_status, {
@@ -57,7 +58,8 @@ class AwsAccount < ApplicationRecord
             length: { minimum: 16, maximum: 128 },
             format: { with: /\AAKIA[0-9A-Z]{16,}\z/, message: "不是有效的AWS Access Key格式" }
   
-  validates :secret_key, presence: true, length: { minimum: 40 }
+  validates :secret_key, presence: true, length: { minimum: 40 }, on: :create
+  validates :secret_key, length: { minimum: 40 }, allow_blank: true, on: :update
   validates :name, presence: true, length: { maximum: 100 }
   validates :description, length: { maximum: 500 }, allow_blank: true
   
@@ -66,9 +68,11 @@ class AwsAccount < ApplicationRecord
 
   # Scopes
   scope :active, -> { where(status: :active) }
-  scope :public_visible, -> { where(status: :active) }
+  scope :available, -> { active }  # active状态的账号就是可用的
+  scope :public_visible, -> { where(status: [:active, :for_sale]) }
   scope :with_quotas, -> { includes(:account_quotas, :quota_definitions) }
   scope :by_status, ->(status) { where(status: status) }
+  scope :by_region, ->(region) { where(region: region) }
   scope :search, ->(query) { 
     where("name LIKE :q OR account_id LIKE :q OR description LIKE :q", q: "%#{query}%") 
   }
@@ -119,6 +123,11 @@ class AwsAccount < ApplicationRecord
     '••••••••••••••••'
   end
 
+  def masked_account_id
+    return '未设置' unless account_id.present?
+    "#{account_id[0..7]}****"  # 显示前8位，隐藏后4位
+  end
+
   # Claude model availability
   def available_models
     account_quotas.joins(:quota_definition)
@@ -129,6 +138,78 @@ class AwsAccount < ApplicationRecord
 
   def model_quotas(model_name)
     account_quotas.by_model(model_name)
+  end
+
+  # Quota summary for display
+  def quota_summary
+    {
+      rpm: account_quotas.joins(:quota_definition)
+           .where(quota_definitions: { quota_type: 'requests_per_minute' })
+           .maximum(:current_quota) || 0,
+      tpm: account_quotas.joins(:quota_definition)
+           .where(quota_definitions: { quota_type: 'tokens_per_minute' })
+           .maximum(:current_quota) || 0,
+      tpd: account_quotas.joins(:quota_definition)
+           .where(quota_definitions: { quota_type: 'tokens_per_day' })
+           .maximum(:current_quota) || 0
+    }
+  end
+
+  # Format large numbers for display
+  def format_quota_value(value)
+    return '0' if value.nil? || value == 0
+    
+    if value >= 1_000_000
+      "#{(value / 1_000_000.0).round(1)}M"
+    elsif value >= 1_000
+      "#{(value / 1_000.0).round(1)}K"
+    else
+      value.to_i.to_s
+    end
+  end
+
+  # Get models with all quota levels (low, medium, high)
+  def available_models_with_levels
+    account_quotas.includes(:quota_definition)
+      .where.not(quota_level: ['unknown'])
+      .group_by { |q| q.quota_definition.claude_model_name }
+      .map do |model_name, quotas|
+        # Get the lowest level for this model (bottleneck determines real capability)
+        if quotas.any? { |q| q.quota_level == 'low' }
+          actual_level = 'low'
+        elsif quotas.any? { |q| q.quota_level == 'medium' }
+          actual_level = 'medium'
+        else
+          actual_level = 'high'
+        end
+        
+        # Extract display name from full model name
+        # Examples:
+        # "Claude 3.5 Sonnet V1" -> "3.5 Sonnet V1"
+        # "Claude 3.7 Sonnet V1" -> "3.7 Sonnet V1"
+        # "Claude 4 Sonnet V1" -> "4 Sonnet V1"
+        parts = model_name.split(' ')
+        
+        # Remove "Claude" and keep version number + model + version
+        if parts.length >= 3 && parts[0] == 'Claude'
+          if parts.last =~ /^V\d+$/
+            # Has version: "Claude 3.5 Sonnet V1" -> "3.5 Sonnet V1"
+            display_name = parts[1..-1].join(' ')
+          else
+            # No version: "Claude 3.5 Sonnet" -> "3.5 Sonnet"
+            display_name = parts[1..-1].join(' ')
+          end
+        else
+          # Fallback for unexpected format
+          display_name = model_name
+        end
+        
+        {
+          name: display_name,
+          level: actual_level
+        }
+      end
+      .sort_by { |m| m[:name] }
   end
 
   # Auditable configuration

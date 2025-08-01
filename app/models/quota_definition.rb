@@ -14,7 +14,6 @@ class QuotaDefinition < ApplicationRecord
   scope :active, -> { where(is_active: true) }
   scope :by_model, ->(model_name) { where(claude_model_name: model_name) }
   scope :by_type, ->(quota_type) { where(quota_type: quota_type) }
-  scope :by_model_version, ->(version) { where(model_version: version) }
   
   # Quota types
   QUOTA_TYPES = {
@@ -25,8 +24,7 @@ class QuotaDefinition < ApplicationRecord
   
   # Instance methods
   def display_name
-    version_str = model_version.present? ? " #{model_version}" : ""
-    "#{claude_model_name}#{version_str} - #{quota_type_display}"
+    "#{claude_model_name} - #{quota_type_display}"
   end
   
   # Alias for compatibility
@@ -50,6 +48,20 @@ class QuotaDefinition < ApplicationRecord
       "#{number_with_delimiter(value.to_i)} TPD"
     else
       value.to_s
+    end
+  end
+
+  # Unit method for display compatibility
+  def unit
+    case quota_type
+    when 'requests_per_minute'
+      'RPM'
+    when 'tokens_per_minute'
+      'TPM'
+    when 'tokens_per_day'
+      'TPD'
+    else
+      ''
     end
   end
 

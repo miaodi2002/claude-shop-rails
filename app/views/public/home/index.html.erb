@@ -1,0 +1,147 @@
+<!-- Hero Section -->
+<section class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-16">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center">
+      <h1 class="text-4xl md:text-5xl font-bold mb-4">
+        AWS Bedrock Claude 配额账号
+      </h1>
+      <p class="text-xl md:text-2xl mb-8 text-indigo-100">
+        提供高质量的Claude模型配额账号，满足您的AI应用需求
+      </p>
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <%= link_to '查看所有账号', public_accounts_path, class: "bg-white text-indigo-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition text-center" %>
+        <a href="#features" class="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-indigo-600 transition text-center">
+          了解更多
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Statistics Section -->
+<section class="py-12 bg-white">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+      <div>
+        <div class="text-4xl font-bold text-indigo-600"><%= @stats[:total_accounts] %></div>
+        <div class="text-gray-600 mt-2">总账号数</div>
+      </div>
+      <div>
+        <div class="text-4xl font-bold text-green-600"><%= @stats[:available_accounts] %></div>
+        <div class="text-gray-600 mt-2">可用账号</div>
+      </div>
+      <div>
+        <div class="text-4xl font-bold text-purple-600"><%= @stats[:total_models] %></div>
+        <div class="text-gray-600 mt-2">支持模型</div>
+      </div>
+      <div>
+        <div class="text-4xl font-bold text-blue-600">24/7</div>
+        <div class="text-gray-600 mt-2">全天服务</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Features Section -->
+<section id="features" class="py-16 bg-gray-50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <h2 class="text-3xl font-bold text-center mb-12">为什么选择我们</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div class="bg-white p-6 rounded-lg shadow-md">
+        <div class="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
+          <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+          </svg>
+        </div>
+        <h3 class="text-xl font-semibold mb-2">高性能配额</h3>
+        <p class="text-gray-600">
+          提供高RPM和TPM配额的账号，确保您的应用流畅运行，无需担心限制。
+        </p>
+      </div>
+      
+      <div class="bg-white p-6 rounded-lg shadow-md">
+        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+          <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+          </svg>
+        </div>
+        <h3 class="text-xl font-semibold mb-2">安全可靠</h3>
+        <p class="text-gray-600">
+          所有账号经过严格验证，确保账号安全性和稳定性，让您安心使用。
+        </p>
+      </div>
+      
+      <div class="bg-white p-6 rounded-lg shadow-md">
+        <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
+          <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+        <h3 class="text-xl font-semibold mb-2">实时更新</h3>
+        <p class="text-gray-600">
+          配额信息实时更新，确保您看到的都是最新的账号状态和配额信息。
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Recent Accounts Section -->
+<section class="py-16">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-between items-center mb-8">
+      <h2 class="text-3xl font-bold">最新账号</h2>
+      <%= link_to '查看全部 →', public_accounts_path, class: "text-indigo-600 hover:text-indigo-700 font-medium" %>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <% @accounts.limit(6).each do |account| %>
+        <div class="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
+          <%= link_to public_account_path(account), class: "block p-6" do %>
+            <!-- 头部：账号名称 + 状态 -->
+            <div class="flex justify-between items-start mb-4">
+              <h3 class="text-lg font-semibold text-gray-900"><%= account.name %></h3>
+              <span class="px-3 py-1 text-xs font-medium rounded-full <%= account.status == 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' %>">
+                <%= account.status == 'active' ? '活跃' : '不可用' %>
+              </span>
+            </div>
+            
+            <!-- 账号ID（隐藏后4位） -->
+            <p class="text-sm text-gray-500 mb-6">ID: <%= account.masked_account_id %></p>
+            
+            <!-- 支持的模型（显示所有配额级别） -->
+            <div class="flex flex-wrap gap-2">
+              <% account.available_models_with_levels.each do |model| %>
+                <span class="px-3 py-1 text-sm font-medium rounded-full 
+                             <%= case model[:level]
+                                   when 'high' then 'bg-green-100 text-green-800'
+                                   when 'medium' then 'bg-blue-100 text-blue-800'  
+                                   when 'low' then 'bg-red-100 text-red-800'
+                                   else 'bg-gray-100 text-gray-800'
+                                 end %>">
+                  <%= model[:name] %>
+                </span>
+              <% end %>
+              <% if account.available_models_with_levels.empty? %>
+                <span class="text-sm text-gray-400">暂无高配额模型</span>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</section>
+
+<!-- CTA Section -->
+<section class="py-16 bg-indigo-600">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+    <h2 class="text-3xl font-bold text-white mb-4">
+      准备好开始了吗？
+    </h2>
+    <p class="text-xl text-indigo-100 mb-8">
+      选择适合您的AWS Bedrock账号，立即开始使用Claude模型
+    </p>
+    <%= link_to '浏览所有账号', public_accounts_path, class: "bg-white text-indigo-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition inline-block" %>
+  </div>
+</section>

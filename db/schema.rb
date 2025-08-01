@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_07_26_161131) do
+ActiveRecord::Schema[8.0].define(version: 2025_07_31_074404) do
   create_table "account_quotas", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "aws_account_id", null: false
     t.bigint "quota_definition_id", null: false
@@ -98,7 +98,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_26_161131) do
   create_table "quota_definitions", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "quota_code", null: false
     t.string "claude_model_name", null: false
-    t.string "model_version"
     t.string "quota_type", null: false
     t.text "quota_name", null: false
     t.string "call_type"

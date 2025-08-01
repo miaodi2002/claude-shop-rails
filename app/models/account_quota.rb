@@ -40,7 +40,7 @@ class AccountQuota < ApplicationRecord
   scope :needs_sync, -> { where('last_sync_at IS NULL OR last_sync_at < ?', 24.hours.ago) }
   
   # Delegations
-  delegate :model_name, :model_version, :quota_type, :quota_name, :display_name, 
+  delegate :model_name, :quota_type, :quota_name, :display_name, 
            :quota_code, :format_value, to: :quota_definition
   
   # Instance methods
@@ -97,7 +97,7 @@ class AccountQuota < ApplicationRecord
   def level_color
     case quota_level
     when 'high' then 'green'
-    when 'medium' then 'yellow'
+    when 'medium' then 'blue'
     when 'low' then 'red'
     else 'gray'
     end
@@ -128,7 +128,7 @@ class AccountQuota < ApplicationRecord
     when 'high'
       '高配额'
     when 'medium'
-      '中配额'
+      '标准配额'
     when 'low'
       '低配额'
     else
