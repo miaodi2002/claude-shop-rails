@@ -42,7 +42,9 @@ module Admin
         { name: '仪表板', path: admin_dashboard_path, icon: 'dashboard' },
         { name: 'AWS账号', path: admin_aws_accounts_path, icon: 'cloud' },
         { name: '配额管理', path: admin_account_quotas_path, icon: 'chart' },
-        { name: '审计日志', path: admin_audit_logs_path, icon: 'history' }
+        { name: '费用管理', path: admin_costs_path, icon: 'dollar-sign' },
+        { name: '审计日志', path: admin_audit_logs_path, icon: 'history' },
+        { name: '后台任务', path: '/sidekiq', icon: 'settings', target: '_blank' }
       ]
       
       # 只有超级管理员可以看到用户管理

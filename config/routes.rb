@@ -1,5 +1,10 @@
 Rails.application.routes.draw do
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
+  
+  require 'sidekiq/web'
+  
+  # Mount Sidekiq Web UI with authentication
+  mount Sidekiq::Web => '/sidekiq', constraints: AdminConstraint
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
   # Can be used by load balancers and uptime monitors to verify that the app is live.
@@ -61,6 +66,17 @@ Rails.application.routes.draw do
         patch :activate
         patch :deactivate
         patch :unlock
+      end
+    end
+    
+    resources :costs, only: [:index, :show] do
+      member do
+        post :sync_account
+        get :chart_data
+      end
+      collection do
+        post :batch_sync
+        get :sync_status
       end
     end
   end

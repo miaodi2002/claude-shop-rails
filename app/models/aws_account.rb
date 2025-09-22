@@ -32,6 +32,8 @@ class AwsAccount < ApplicationRecord
   has_many :quota_definitions, through: :account_quotas
   has_many :refresh_jobs, dependent: :nullify
   has_many :audit_logs, as: :target, dependent: :destroy
+  has_many :daily_costs, dependent: :destroy
+  has_many :cost_sync_logs, dependent: :nullify
 
   # Alias for backward compatibility with old quota system
   alias_method :quotas, :account_quotas
@@ -210,6 +212,27 @@ class AwsAccount < ApplicationRecord
         }
       end
       .sort_by { |m| m[:name] }
+  end
+
+  # Cost management helpers
+  def recent_costs(weeks = 2)
+    daily_costs.recent_weeks(weeks)
+  end
+  
+  def total_cost_for_period(start_date, end_date)
+    daily_costs.total_for_period(start_date, end_date)
+  end
+  
+  def latest_cost_sync_log
+    cost_sync_logs.recent.first
+  end
+  
+  def has_cost_data?
+    daily_costs.exists?
+  end
+  
+  def cost_sync_success_rate
+    CostSyncLog.success_rate(id)
   end
 
   # Auditable configuration

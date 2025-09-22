@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_07_31_074404) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_26_144700) do
   create_table "account_quotas", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "aws_account_id", null: false
     t.bigint "quota_definition_id", null: false
@@ -95,6 +95,37 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_31_074404) do
     t.index ["status"], name: "index_aws_accounts_on_status"
   end
 
+  create_table "cost_sync_logs", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.bigint "aws_account_id"
+    t.integer "status", default: 0, null: false
+    t.integer "sync_type", default: 0, null: false
+    t.text "error_message"
+    t.integer "synced_dates_count", default: 0
+    t.timestamp "started_at"
+    t.timestamp "completed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["aws_account_id", "status"], name: "idx_account_status"
+    t.index ["aws_account_id"], name: "index_cost_sync_logs_on_aws_account_id"
+    t.index ["created_at"], name: "idx_created_at", order: :desc
+    t.index ["status"], name: "idx_status"
+    t.index ["sync_type"], name: "idx_sync_type"
+  end
+
+  create_table "daily_costs", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.bigint "aws_account_id", null: false
+    t.date "date", null: false
+    t.decimal "cost_amount", precision: 10, scale: 2, default: "0.0", null: false
+    t.string "currency", limit: 3, default: "USD", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["aws_account_id", "date"], name: "idx_account_date"
+    t.index ["aws_account_id", "date"], name: "idx_recent_costs", order: { date: :desc }
+    t.index ["aws_account_id", "date"], name: "unique_account_date", unique: true
+    t.index ["aws_account_id"], name: "index_daily_costs_on_aws_account_id"
+    t.index ["date"], name: "idx_date"
+  end
+
   create_table "quota_definitions", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "quota_code", null: false
     t.string "claude_model_name", null: false
@@ -125,6 +156,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_31_074404) do
     t.bigint "admin_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.json "account_ids"
+    t.decimal "progress", precision: 5, scale: 2, default: "0.0"
     t.index ["admin_id"], name: "index_refresh_jobs_on_admin_id"
     t.index ["aws_account_id"], name: "index_refresh_jobs_on_aws_account_id"
     t.index ["created_at"], name: "index_refresh_jobs_on_created_at"
@@ -148,6 +181,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_31_074404) do
   add_foreign_key "account_quotas", "aws_accounts"
   add_foreign_key "account_quotas", "quota_definitions"
   add_foreign_key "audit_logs", "admins"
+  add_foreign_key "cost_sync_logs", "aws_accounts", on_delete: :nullify
+  add_foreign_key "daily_costs", "aws_accounts", on_delete: :cascade
   add_foreign_key "refresh_jobs", "admins"
   add_foreign_key "refresh_jobs", "aws_accounts"
 end

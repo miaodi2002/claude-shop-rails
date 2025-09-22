@@ -27,6 +27,9 @@ class RefreshJob < ApplicationRecord
   validates :total_accounts, numericality: { greater_than_or_equal_to: 0 }
   validates :successful_accounts, numericality: { greater_than_or_equal_to: 0 }
   validates :failed_accounts, numericality: { greater_than_or_equal_to: 0 }
+  
+  # JSON attribute for bulk operations
+  attribute :account_ids, :json
 
   # Callbacks
   before_create :set_defaults

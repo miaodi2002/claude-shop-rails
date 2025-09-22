@@ -31,12 +31,16 @@ gem 'aws-sdk-core'
 gem 'aws-sdk-bedrock'
 gem 'aws-sdk-servicequotas'
 gem 'aws-sdk-sts'
+gem 'aws-sdk-costexplorer'
 
 # Encryption
 gem 'attr_encrypted'
 
 # Background Jobs
 gem 'sidekiq'
+
+# Parallel Processing
+gem 'parallel'
 
 # Caching
 gem 'redis', '~> 5.0'
@@ -56,6 +60,8 @@ gem 'bootsnap', require: false
 # Security
 gem 'rack-cors'
 
+gem "solargraph"
+
 # Time zones
 gem 'tzinfo-data', platforms: [:mingw, :mswin, :x64_mingw, :jruby]
 
@@ -73,6 +79,7 @@ group :development do
   gem 'listen', '~> 3.3'
   gem 'spring'
   gem 'annotate'
+  gem 'ruby-lsp', require: false
 end
 
 group :test do

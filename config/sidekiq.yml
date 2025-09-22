@@ -1,0 +1,24 @@
+# Sidekiq configuration
+
+:queues:
+  - cost_sync
+  - batch_sync
+  - default
+  - mailer
+
+:concurrency: 5
+
+development:
+  :queues:
+    - cost_sync
+    - batch_sync 
+    - default
+    - mailer
+
+production:
+  :queues:
+    - cost_sync
+    - batch_sync
+    - default
+    - mailer
+  :concurrency: 10

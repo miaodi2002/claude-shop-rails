@@ -90,7 +90,12 @@ services:
       redis:
         condition: service_healthy
     user: "1000:1000"
-    command: bundle exec sidekiq
+    command: >
+      bash -c "
+        cd /app &&
+        bundle install &&
+        bundle exec sidekiq
+      "
 
 volumes:
   mysql_data:
