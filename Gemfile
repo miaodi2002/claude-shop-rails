@@ -10,7 +10,7 @@ gem 'rails', '~> 8.0.0'
 gem 'mysql2', '~> 0.5'
 
 # Web server
-gem 'puma', '~> 6.0'
+gem 'puma', '~> 7.0'
 
 # Assets and Frontend
 gem 'sprockets-rails'
